@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+admin/node_modules/
+
+# Environment Variables
+.env
+backend/.env
+frontend/.env
+
+# Python / Virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Build outputs
+frontend/dist/
+dist/
+build/
+.output/
+
+# Docker data / local DB
+postgres_data/
+redis_data/
+*.sqlite3
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

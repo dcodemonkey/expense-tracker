@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-ink: #0B0F14;
+  --bg-surface: #141A22;
+  --bg-surface-2: #1C242E;
+  --bg-surface-3: #242E3A;
+  --text-hi: #F5F7FA;
+  --text-lo: #8A94A6;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --shadow-elevated: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 16px 48px -16px rgba(0, 0, 0, 0.7);
+  color-scheme: dark;
+}
+
+html.light {
+  --bg-ink: #F4F6F9;
+  --bg-surface: #FFFFFF;
+  --bg-surface-2: #EEF2F6;
+  --bg-surface-3: #E2E8F0;
+  --text-hi: #0F172A;
+  --text-lo: #475569;
+  --hairline: rgba(15, 23, 42, 0.1);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-ink text-text-hi font-sans transition-colors duration-200;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight text-text-hi;
+  }
+
+  ::selection {
+    background: rgba(61, 225, 176, 0.28);
+    color: var(--text-hi);
+  }
+
+  /* Thin scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--hairline) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--hairline);
+    border-radius: 9999px;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint/60 focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply btn bg-mint text-slate-900 font-semibold hover:bg-mint-600 shadow-[0_6px_20px_-8px_rgba(61,225,176,0.6)];
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface-2 text-text-hi border border-hairline hover:bg-surface-3;
+  }
+
+  .btn-danger,
+  .btn-destructive {
+    @apply btn bg-flame text-white font-semibold hover:bg-flame-600 shadow-[0_6px_20px_-8px_rgba(255,100,85,0.6)];
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-text-lo hover:text-text-hi hover:bg-surface-2;
+  }
+
+  .input {
+    @apply w-full px-3.5 py-2.5 bg-surface-2 text-text-hi placeholder:text-text-lo border border-hairline rounded-xl focus:outline-none focus:ring-2 focus:ring-mint/50 focus:border-transparent transition-shadow;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-text-lo mb-1.5;
+  }
+
+  .card {
+    @apply bg-surface rounded-2xl border border-hairline shadow-card;
+  }
+
+  .card-header {
+    @apply px-6 py-4 border-b border-hairline;
+  }
+
+  .card-body {
+    @apply p-6;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-expense {
+    @apply badge bg-flame-soft text-flame;
+  }
+
+  .badge-income {
+    @apply badge bg-mint-soft text-mint;
+  }
+
+  .badge-primary {
+    @apply badge bg-violet-soft text-violet;
+  }
+
+  .badge-success {
+    @apply badge bg-mint-soft text-mint;
+  }
+
+  .badge-warning {
+    @apply badge bg-amber-soft text-amber;
+  }
+
+  .badge-gray {
+    @apply badge bg-surface-2 text-text-lo;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3.5 py-2.5 text-text-lo hover:text-text-hi hover:bg-surface-2 rounded-xl transition-colors;
+  }
+
+  .sidebar-link-active {
+    @apply bg-mint-soft text-mint font-medium;
+  }
+
+  /* Table styling */
+  .table-container {
+    @apply w-full overflow-x-auto;
+  }
+
+  .table {
+    @apply w-full text-left border-collapse text-sm;
+  }
+
+  .table th {
+    @apply px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-lo border-b border-hairline bg-surface-2 select-none;
+  }
+
+  .table td {
+    @apply px-4 py-3.5 border-b border-hairline transition-colors align-middle;
+  }
+
+  .table tbody tr:hover td {
+    @apply bg-surface-2;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+}

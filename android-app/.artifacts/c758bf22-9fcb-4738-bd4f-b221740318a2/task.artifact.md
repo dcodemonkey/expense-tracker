@@ -1,0 +1,5 @@
+- [x] Add `--add-opens` flags to `gradle.properties`
+- [x] Migrate to KSP to resolve `IllegalAccessError`
+- [x] Fix compilation errors in 10+ files (imports, SQL, Hilt, Syntax)
+- [x] Verify fix by running Gradle task
+- [x] Create walkthrough

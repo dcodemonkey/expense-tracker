@@ -1,0 +1,5 @@
+{
+  "name": "expense-tracker-root",
+  "private": true,
+  "description": "Use docker compose up -d to run the application stack"
+}
