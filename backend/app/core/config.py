@@ -78,6 +78,11 @@ class Settings(BaseSettings):
                 "SECRET_KEY is unset or insecure; generated an ephemeral development key. "
                 "Tokens are invalidated on every restart — set SECRET_KEY in .env for stable sessions."
             )
+        if self.DATABASE_URL.startswith("postgresql://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif self.DATABASE_URL.startswith("postgres://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+
         return self
 
     @property
