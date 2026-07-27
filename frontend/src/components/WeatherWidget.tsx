@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CloudSun, Wind, MapPin, Droplets, Thermometer, ShieldCheck } from 'lucide-react'
+import { CloudSun, Wind, MapPin, ShieldCheck } from 'lucide-react'
 import AdminLocationRadar from './AdminLocationRadar'
 
 // Weather Code Interpretation

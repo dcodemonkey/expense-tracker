@@ -17,7 +17,6 @@ import {
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import LiveLocationTracker from './LiveLocationTracker'
-import AdminLocationRadar from './AdminLocationRadar'
 import WeatherWidget from './WeatherWidget'
 
 const navigation = [

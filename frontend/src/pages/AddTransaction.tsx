@@ -191,12 +191,7 @@ export default function AddTransaction() {
     }
   }
 
-  const expenseCategories = categories.filter(
-    (c) => c.type === 'expense' || c.type === 'both'
-  )
-  const incomeCategories = categories.filter(
-    (c) => c.type === 'income' || c.type === 'both'
-  )
+
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in pb-12">
