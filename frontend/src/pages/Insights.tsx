@@ -47,7 +47,6 @@ import {
   Money,
   IconTile,
   EmptyState,
-  Badge,
 } from '../components/ui'
 
 type TabId = 'overview' | 'trends' | 'merchants' | 'categories' | 'insights'
@@ -380,7 +379,7 @@ export default function Insights() {
         rows.push([
           '"Summary Report"',
           `"${dateRange.startDate} to ${dateRange.endDate}"`,
-          dashboardData?.this_month_expenses || 0,
+          `"${dashboardData?.this_month_expenses || 0}"`,
           '"This Month Expenses"',
           '"Expense Tracker Export"',
         ])

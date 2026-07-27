@@ -301,7 +301,7 @@ export default function AddTransaction() {
                     placeholder="Detecting location for weather & AQI..."
                   />
                   <div className="absolute right-2.5 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-text-lo/60" title="Location is auto-locked for weather accuracy" />
+                    <Lock className="w-3.5 h-3.5 text-text-lo/60" />
                     <button
                       type="button"
                       onClick={detectLocation}

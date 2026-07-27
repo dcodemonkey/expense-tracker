@@ -22,11 +22,9 @@ import { cn } from '../lib/utils'
 import { api, authApi, usersApi, transactionsApi } from '../lib/api'
 import {
   Card,
-  CardBody,
   Button,
   Input,
   Field,
-  Select,
   Badge,
 } from '../components/ui'
 
