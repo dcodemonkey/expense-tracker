@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = ((import.meta as any).env?.VITE_API_URL) || 'http://localhost:8000/api/v1'
+const API_BASE_URL = ((import.meta as any).env?.VITE_API_URL) || 'https://expense-tracker-59t1.onrender.com/api/v1'
 export const ACCESS_TOKEN_KEY = 'expense_tracker_access_token'
 export const REFRESH_TOKEN_KEY = 'expense_tracker_refresh_token'
 
