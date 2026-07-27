@@ -11,6 +11,10 @@ export interface User {
   role: string
   is_active: boolean
   is_verified: boolean
+  last_location?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  last_location_updated_at?: string | null
   created_at: string
 }
 
