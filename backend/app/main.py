@@ -2,7 +2,6 @@ import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
@@ -49,17 +48,18 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Bulletproof CORS: manually inject headers on every response
-@app.middleware("http")
-async def add_cors_headers(request: Request, call_next):
-    origin = request.headers.get("origin", "")
 
-    # Handle OPTIONS preflight immediately — before any route processing
+# Single custom CORS middleware — no CORSMiddleware conflict
+@app.middleware("http")
+async def cors_handler(request: Request, call_next):
+    origin = request.headers.get("origin", "*")
+
+    # Immediately respond to all OPTIONS preflight requests
     if request.method == "OPTIONS":
         return Response(
             status_code=200,
             headers={
-                "Access-Control-Allow-Origin": origin or "*",
+                "Access-Control-Allow-Origin": origin,
                 "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, X-Requested-With",
                 "Access-Control-Allow-Credentials": "true",
@@ -67,22 +67,14 @@ async def add_cors_headers(request: Request, call_next):
             },
         )
 
+    # Process all other requests and inject CORS headers into every response
     response = await call_next(request)
-
-    # Inject CORS headers into every response
-    response.headers["Access-Control-Allow-Origin"] = origin or "*"
+    response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
     return response
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
