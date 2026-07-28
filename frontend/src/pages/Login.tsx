@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { Mail, Lock, Eye, EyeOff, AlertCircle, Wifi } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import AuthShell from '../components/AuthShell'
 import { Button, Field, Input } from '../components/ui'
 
@@ -15,54 +15,12 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>
 
-// Derive base URL from VITE_API_URL env variable
-const API_BASE = ((import.meta as any).env?.VITE_API_URL || 'https://expense-tracker-59tl.onrender.com/api/v1')
-  .replace('/api/v1', '')
-
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [serverStatus, setServerStatus] = useState<'checking' | 'ready' | 'slow'>('checking')
-
-  // Wake up the Render backend as soon as the login page loads.
-  // Image() requests bypass CORS entirely — they always reach the server.
-  useEffect(() => {
-    let cancelled = false
-
-    // Immediately show the starting-up banner so users know to wait
-    setServerStatus('slow')
-
-    // Fire a wake-up ping via Image() — always reaches server, never blocked by CORS
-    const img = new Image()
-    img.src = `${API_BASE}/health?_wake=${Date.now()}`
-
-    // Poll every 5 s with a regular CORS fetch — succeeds once the server is awake
-    const poll = setInterval(async () => {
-      if (cancelled) { clearInterval(poll); return }
-      try {
-        const res = await fetch(`${API_BASE}/health`)
-        if (res.ok) {
-          if (!cancelled) setServerStatus('ready')
-          clearInterval(poll)
-        }
-      } catch { /* server still starting */ }
-    }, 5000)
-
-    // Give up after 2 minutes — enable the button regardless
-    const timeout = setTimeout(() => {
-      if (!cancelled) setServerStatus('ready')
-      clearInterval(poll)
-    }, 120000)
-
-    return () => {
-      cancelled = true
-      clearInterval(poll)
-      clearTimeout(timeout)
-    }
-  }, [])
 
   const {
     register,
@@ -77,22 +35,7 @@ export default function Login() {
       await login(data.email, data.password)
       navigate('/dashboard')
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        setError(err.response.data?.detail || 'Invalid email or password')
-      } else if (!err.response) {
-        // Network/CORS failure — likely cold start; retry once after 8 s
-        setError('Server is starting up… retrying in 8 seconds')
-        await new Promise(r => setTimeout(r, 8000))
-        try {
-          await login(data.email, data.password)
-          navigate('/dashboard')
-          return
-        } catch (retryErr: any) {
-          setError(retryErr.response?.data?.detail || 'Connection failed. Please try again.')
-        }
-      } else {
-        setError(err.response?.data?.detail || 'Something went wrong. Please try again.')
-      }
+      setError(err.response?.data?.detail || 'Invalid email or password')
     } finally {
       setLoading(false)
     }
@@ -111,13 +54,6 @@ export default function Login() {
         </>
       }
     >
-      {serverStatus === 'slow' && (
-        <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 text-sm mb-2">
-          <Wifi className="h-4 w-4 shrink-0 animate-pulse" />
-          <span>Server is starting up — this may take 30–60 seconds on first visit.</span>
-        </div>
-      )}
-
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
         {error && (
           <div className="flex items-center gap-2 p-3 bg-flame-soft border border-flame/30 rounded-xl text-flame text-sm">
@@ -167,18 +103,8 @@ export default function Login() {
           </Link>
         </div>
 
-        <Button
-          type="submit"
-          size="lg"
-          fullWidth
-          loading={loading}
-          disabled={loading || serverStatus === 'checking'}
-        >
-          {loading
-            ? 'Signing in…'
-            : serverStatus === 'checking'
-            ? 'Connecting…'
-            : 'Sign in'}
+        <Button type="submit" size="lg" fullWidth loading={loading}>
+          {loading ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
     </AuthShell>

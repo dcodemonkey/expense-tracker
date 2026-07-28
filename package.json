@@ -1,5 +1,8 @@
 {
   "name": "expense-tracker-root",
   "private": true,
-  "description": "Use docker compose up -d to run the application stack"
+  "description": "Use docker compose up -d to run the application stack",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build"
+  }
 }
