@@ -27,37 +27,41 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [serverStatus, setServerStatus] = useState<'checking' | 'ready' | 'slow'>('checking')
 
-  // Wake up the Render backend as soon as the login page loads
+  // Wake up the Render backend as soon as the login page loads.
+  // Image() requests bypass CORS entirely — they always reach the server.
   useEffect(() => {
     let cancelled = false
-    const warmUp = async () => {
-      // Fire a no-cors ping immediately — this wakes the server even when CORS blocks the response
-      fetch(`${API_BASE}/health`, { mode: 'no-cors' }).catch(() => {})
 
-      // Poll every 4s with a regular CORS request until the server actually responds
-      const poll = setInterval(async () => {
-        if (cancelled) { clearInterval(poll); return }
-        try {
-          const res = await fetch(`${API_BASE}/health`)
-          if (res.ok && !cancelled) {
-            setServerStatus('ready')
-            clearInterval(poll)
-          }
-        } catch { /* still starting */ }
-      }, 4000)
+    // Immediately show the starting-up banner so users know to wait
+    setServerStatus('slow')
 
-      // Show slow-server hint after 8 seconds if still not ready
-      setTimeout(() => {
-        if (!cancelled && serverStatus === 'checking') setServerStatus('slow')
-      }, 8000)
+    // Fire a wake-up ping via Image() — always reaches server, never blocked by CORS
+    const img = new Image()
+    img.src = `${API_BASE}/health?_wake=${Date.now()}`
 
-      // Give up polling after 90 seconds — enable the button anyway
-      setTimeout(() => {
-        if (!cancelled) { setServerStatus('ready'); clearInterval(poll) }
-      }, 90000)
+    // Poll every 5 s with a regular CORS fetch — succeeds once the server is awake
+    const poll = setInterval(async () => {
+      if (cancelled) { clearInterval(poll); return }
+      try {
+        const res = await fetch(`${API_BASE}/health`)
+        if (res.ok) {
+          if (!cancelled) setServerStatus('ready')
+          clearInterval(poll)
+        }
+      } catch { /* server still starting */ }
+    }, 5000)
+
+    // Give up after 2 minutes — enable the button regardless
+    const timeout = setTimeout(() => {
+      if (!cancelled) setServerStatus('ready')
+      clearInterval(poll)
+    }, 120000)
+
+    return () => {
+      cancelled = true
+      clearInterval(poll)
+      clearTimeout(timeout)
     }
-    warmUp()
-    return () => { cancelled = true }
   }, [])
 
   const {
