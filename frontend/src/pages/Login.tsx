@@ -31,26 +31,30 @@ export default function Login() {
   useEffect(() => {
     let cancelled = false
     const warmUp = async () => {
-      try {
-        await fetch(`${API_BASE}/health`)
-        if (!cancelled) setServerStatus('ready')
-      } catch {
-        // Server may be cold-starting; show a hint after a delay
-        if (!cancelled) {
-          setServerStatus('slow')
-          // Keep retrying silently every 5 seconds
-          const timer = setInterval(async () => {
-            try {
-              await fetch(`${API_BASE}/health`)
-              if (!cancelled) {
-                setServerStatus('ready')
-                clearInterval(timer)
-              }
-            } catch { /* still starting */ }
-          }, 5000)
-          setTimeout(() => clearInterval(timer), 60000)
-        }
-      }
+      // Fire a no-cors ping immediately — this wakes the server even when CORS blocks the response
+      fetch(`${API_BASE}/health`, { mode: 'no-cors' }).catch(() => {})
+
+      // Poll every 4s with a regular CORS request until the server actually responds
+      const poll = setInterval(async () => {
+        if (cancelled) { clearInterval(poll); return }
+        try {
+          const res = await fetch(`${API_BASE}/health`)
+          if (res.ok && !cancelled) {
+            setServerStatus('ready')
+            clearInterval(poll)
+          }
+        } catch { /* still starting */ }
+      }, 4000)
+
+      // Show slow-server hint after 8 seconds if still not ready
+      setTimeout(() => {
+        if (!cancelled && serverStatus === 'checking') setServerStatus('slow')
+      }, 8000)
+
+      // Give up polling after 90 seconds — enable the button anyway
+      setTimeout(() => {
+        if (!cancelled) { setServerStatus('ready'); clearInterval(poll) }
+      }, 90000)
     }
     warmUp()
     return () => { cancelled = true }
