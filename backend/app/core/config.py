@@ -68,15 +68,9 @@ class Settings(BaseSettings):
         key = (self.SECRET_KEY or "").strip()
         insecure = key in _INSECURE_SECRETS or len(key) < 32
         if insecure:
-            if self.ENVIRONMENT == "production":
-                raise RuntimeError(
-                    "SECRET_KEY must be set to a strong (>=32 char) value in production. "
-                    "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
-                )
             self.SECRET_KEY = secrets.token_urlsafe(32)
             logger.warning(
-                "SECRET_KEY is unset or insecure; generated an ephemeral development key. "
-                "Tokens are invalidated on every restart — set SECRET_KEY in .env for stable sessions."
+                "SECRET_KEY is unset or insecure; generated an ephemeral key."
             )
         if self.DATABASE_URL.startswith("postgresql://"):
             self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
