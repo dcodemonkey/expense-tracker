@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { CloudSun, Wind, MapPin, ShieldCheck } from 'lucide-react'
 import AdminLocationRadar from './AdminLocationRadar'
 
-// Weather Code Interpretation
 function getWeatherCondition(code?: number): string {
   if (code === undefined || code === null) return 'Clear Sky'
   if (code === 0) return 'Clear Sky'
@@ -29,85 +28,74 @@ export default function WeatherWidget() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!('geolocation' in navigator)) {
-      setLoading(false)
-      return
-    }
+    async function fetchWeatherByIp() {
+      try {
+        let latitude = 28.6139
+        let longitude = 77.2090
+        let locationName = 'New Delhi'
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords
-
-        let locationName = 'Your Area'
-
+        // Silently resolve city & coords via IP (Zero permission popup!)
         try {
-          const rRes = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
-          )
-          const rData = await rRes.json()
-          const address = rData.address || {}
-          const place = address.suburb || address.neighbourhood || address.residential || address.city_district || ''
-          const city = address.city || address.town || address.village || ''
-          if (place) {
-            locationName = city && !place.includes(city) ? `${place}, ${city}` : place
-          } else if (city) {
-            locationName = city
+          const ipRes = await fetch('https://ipapi.co/json/')
+          if (ipRes.ok) {
+            const ipData = await ipRes.json()
+            if (ipData.latitude && ipData.longitude) {
+              latitude = ipData.latitude
+              longitude = ipData.longitude
+              locationName = [ipData.city, ipData.region].filter(Boolean).join(', ') || locationName
+            }
           }
         } catch {
-          // Fallback
+          // Fallback to default city coords
         }
 
-        try {
-          const [wRes, aRes] = await Promise.all([
-            fetch(
-              `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
-            ),
-            fetch(
-              `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&current=us_aqi`
-            ),
-          ])
-          const wData = await wRes.json()
-          const aData = await aRes.json()
+        const [wRes, aRes] = await Promise.all([
+          fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
+          ),
+          fetch(
+            `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&current=us_aqi`
+          ),
+        ])
+        const wData = await wRes.json()
+        const aData = await aRes.json()
 
-          const temp = wData.current_weather?.temperature ?? 26
-          const weatherCode = wData.current_weather?.weathercode
-          const windSpeed = wData.current_weather?.windspeed ?? 12
-          const condition = getWeatherCondition(weatherCode)
+        const temp = wData.current_weather?.temperature ?? 26
+        const weatherCode = wData.current_weather?.weathercode
+        const windSpeed = wData.current_weather?.windspeed ?? 12
+        const condition = getWeatherCondition(weatherCode)
 
-          const rawAqi = aData.current?.us_aqi
-          const aqi = rawAqi || Math.floor(Math.random() * 25 + 38)
+        const rawAqi = aData.current?.us_aqi
+        const aqi = rawAqi || 45
 
-          let aqiStatus: 'Good' | 'Moderate' | 'Unhealthy' = 'Good'
-          let aqiColor: 'mint' | 'amber' | 'flame' = 'mint'
+        let aqiStatus: 'Good' | 'Moderate' | 'Unhealthy' = 'Good'
+        let aqiColor: 'mint' | 'amber' | 'flame' = 'mint'
 
-          if (aqi > 150) {
-            aqiStatus = 'Unhealthy'
-            aqiColor = 'flame'
-          } else if (aqi > 50) {
-            aqiStatus = 'Moderate'
-            aqiColor = 'amber'
-          }
-
-          setWeatherData({
-            locationName,
-            temp,
-            condition,
-            windSpeed,
-            aqi,
-            aqiStatus,
-            aqiColor,
-          })
-        } catch (err) {
-          console.warn('WeatherWidget fetch error:', err)
-        } finally {
-          setLoading(false)
+        if (aqi > 150) {
+          aqiStatus = 'Unhealthy'
+          aqiColor = 'flame'
+        } else if (aqi > 50) {
+          aqiStatus = 'Moderate'
+          aqiColor = 'amber'
         }
-      },
-      () => {
+
+        setWeatherData({
+          locationName,
+          temp,
+          condition,
+          windSpeed,
+          aqi,
+          aqiStatus,
+          aqiColor,
+        })
+      } catch (err) {
+        console.warn('WeatherWidget fetch error:', err)
+      } finally {
         setLoading(false)
-      },
-      { timeout: 10000 }
-    )
+      }
+    }
+
+    fetchWeatherByIp()
   }, [])
 
   if (loading) {
