@@ -1,8 +1,8 @@
 import os
 import sys
 
-# Add current directory (frontend/api) to sys.path so the local 'app' package is found
-sys.path.append(os.path.dirname(__file__))
+# Ensure the directory containing the 'app' module is in sys.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.main import app
 
@@ -15,18 +15,16 @@ class VercelPathMiddleware:
         if scope["type"] in ("http", "websocket"):
             headers = dict(scope.get("headers", []))
             
-            # Vercel passes the original URL path in these headers
+            # Extract original request path from Vercel headers
             original_path = headers.get(b"x-vercel-forwarded-path", b"").decode("utf-8")
             if not original_path:
                 original_path = headers.get(b"x-matched-path", b"").decode("utf-8")
             
             if original_path:
-                scope["path"] = original_path
-                query_string = scope.get("query_string", b"").decode("utf-8")
-                raw_path_with_query = original_path
-                if query_string:
-                    raw_path_with_query += f"?{query_string}"
-                scope["raw_path"] = raw_path_with_query.encode("utf-8")
+                # Strip query string if present in path string
+                clean_path = original_path.split("?")[0]
+                scope["path"] = clean_path
+                scope["raw_path"] = clean_path.encode("utf-8")
 
         return await self.asgi_app(scope, receive, send)
 
