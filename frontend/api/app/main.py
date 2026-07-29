@@ -34,8 +34,11 @@ async def _promote_admins() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
-    await _promote_admins()
+    try:
+        await init_db()
+        await _promote_admins()
+    except Exception as e:
+        logger.warning("Startup database init skipped or already initialized: %s", e)
     yield
 
 
