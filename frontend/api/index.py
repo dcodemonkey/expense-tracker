@@ -1,8 +1,8 @@
 import os
 import sys
 
-# The 'backend' folder is two levels up from 'frontend/api/'
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "backend"))
+# Add current directory (frontend/api) to sys.path so the local 'app' package is found
+sys.path.append(os.path.dirname(__file__))
 
 from app.main import app
 
