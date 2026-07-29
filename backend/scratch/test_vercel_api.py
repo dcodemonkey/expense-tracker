@@ -2,7 +2,7 @@ import json
 import urllib.request
 import urllib.error
 
-url = "https://expense-tracker-eight-phi-16.vercel.app/api/v1/auth/login"
+url = "https://expense-tracker-decodemonkey.vercel.app/api/v1/auth/login"
 
 def make_request(method, data=None):
     req = urllib.request.Request(url, method=method)
