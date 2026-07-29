@@ -19,6 +19,7 @@ import {
 import { cn } from '../lib/utils'
 import LiveLocationTracker from './LiveLocationTracker'
 import WeatherWidget from './WeatherWidget'
+import PWAInstallPrompt from './PWAInstallPrompt'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -73,6 +74,7 @@ export default function Layout() {
         <div className="p-4 space-y-3 border-b border-hairline/60">
           <WeatherWidget />
           <LiveLocationTracker />
+          <PWAInstallPrompt />
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
