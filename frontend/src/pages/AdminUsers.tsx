@@ -4,7 +4,6 @@ import { adminApi } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import {
   Shield,
-  ShieldCheck,
   UserCheck,
   UserX,
   MapPin,
