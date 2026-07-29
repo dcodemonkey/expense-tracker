@@ -3,7 +3,8 @@ import zlib
 
 def make_png(width, height, r, g, b, path):
     sig = b'\x89PNG\r\n\x1a\n'
-    ihdr_data = struct.pack('>IIBBEEE', width, height, 8, 2, 0, 0, 0)
+    # Format: > II BBBBB (Width, Height, BitDepth=8, ColorType=2 (RGB), Compression=0, Filter=0, Interlace=0)
+    ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
     ihdr = struct.pack('>I', 13) + b'IHDR' + ihdr_data + struct.pack('>I', zlib.crc32(b'IHDR' + ihdr_data))
     
     raw = bytearray()
@@ -21,4 +22,4 @@ def make_png(width, height, r, g, b, path):
 
 make_png(192, 192, 61, 225, 176, r"d:\Projects\expense-tracker\frontend\public\icon-192.png")
 make_png(512, 512, 61, 225, 176, r"d:\Projects\expense-tracker\frontend\public\icon-512.png")
-print("Successfully generated icon-192.png and icon-512.png")
+print("Successfully generated icon-192.png and icon-512.png in frontend/public")
