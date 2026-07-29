@@ -14,6 +14,7 @@ import Categories from './pages/Categories'
 import Budgets from './pages/Budgets'
 import Insights from './pages/Insights'
 import Settings from './pages/Settings'
+import AdminUsers from './pages/AdminUsers'
 
 function FullScreenSpinner() {
   return (
@@ -62,6 +63,7 @@ function App() {
         <Route path="budgets" element={<Budgets />} />
         <Route path="insights" element={<Insights />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="admin/users" element={<AdminUsers />} />
       </Route>
     </Routes>
   )

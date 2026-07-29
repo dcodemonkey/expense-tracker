@@ -14,6 +14,7 @@ import {
   Wallet,
   Sun,
   Moon,
+  Users,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import LiveLocationTracker from './LiveLocationTracker'
@@ -90,6 +91,21 @@ export default function Layout() {
               </NavLink>
             )
           })}
+
+          {user?.role === 'admin' && (
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) =>
+                cn(
+                  'sidebar-link text-mint hover:bg-mint-soft/30 border border-mint/20 mt-2',
+                  isActive && 'bg-mint-soft border-mint/40 font-bold'
+                )
+              }
+            >
+              <Users className="h-5 w-5 shrink-0 text-mint" />
+              User Admin
+            </NavLink>
+          )}
         </nav>
 
         <div className="p-3">

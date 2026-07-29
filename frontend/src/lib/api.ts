@@ -234,3 +234,12 @@ export const usersApi = {
     api.post('/users/live-location', data),
   getAllLocations: () => api.get('/users/all-locations'),
 }
+
+export const adminApi = {
+  getStats: () => api.get('/admin/stats'),
+  getUsers: () => api.get('/admin/users'),
+  updateRole: (userId: number, role: string) => api.put(`/admin/users/${userId}/role`, { role }),
+  updateStatus: (userId: number, is_active: boolean) => api.put(`/admin/users/${userId}/status`, { is_active }),
+  getUserTransactions: (userId: number, limit: number = 200) =>
+    api.get(`/admin/users/${userId}/transactions`, { params: { limit } }),
+}
