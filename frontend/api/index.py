@@ -1,8 +1,8 @@
 import os
 import sys
 
-# Add the 'backend' folder to the python path so imports inside 'app' work properly
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "backend"))
+# The 'backend' folder is two levels up from 'frontend/api/'
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "backend"))
 
 from app.main import app
 
@@ -21,9 +21,7 @@ class VercelPathMiddleware:
                 original_path = headers.get(b"x-matched-path", b"").decode("utf-8")
             
             if original_path:
-                # Update the ASGI scope path so FastAPI routes it correctly
                 scope["path"] = original_path
-                # Keep query params if they exist in the raw path
                 query_string = scope.get("query_string", b"").decode("utf-8")
                 raw_path_with_query = original_path
                 if query_string:
@@ -32,6 +30,5 @@ class VercelPathMiddleware:
 
         return await self.asgi_app(scope, receive, send)
 
-# Wrap the FastAPI app with the path restoration middleware
 handler = VercelPathMiddleware(app)
-app = handler # Export as 'app' for Vercel
+app = handler
