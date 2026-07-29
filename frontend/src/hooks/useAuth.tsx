@@ -36,6 +36,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setLoading(false)
     }
+
+    // Background session heartbeat every 15 minutes to keep tokens & sessions active indefinitely
+    const heartbeatId = setInterval(() => {
+      const activeToken = localStorage.getItem(ACCESS_TOKEN_KEY)
+      if (activeToken) {
+        authApi.me().catch(() => {})
+      }
+    }, 15 * 60 * 1000)
+
+    return () => clearInterval(heartbeatId)
   }, [])
 
   const login = async (email: string, password: string) => {
