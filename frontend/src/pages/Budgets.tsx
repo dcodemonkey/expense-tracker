@@ -117,7 +117,7 @@ function BudgetForm({ budget, onClose }: BudgetFormProps) {
     }
   }
 
-  const expenseCategories = categories?.filter((c) => c.type === 'expense' || c.type === 'both') || []
+  const expenseCategories = categories?.filter((c) => !c.type || c.type === 'expense' || c.type === 'both') || []
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

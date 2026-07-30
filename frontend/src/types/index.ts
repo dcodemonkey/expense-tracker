@@ -27,6 +27,7 @@ export interface Category {
   parent_id: number | null
   is_default: boolean
   is_active: boolean
+  type?: 'expense' | 'income' | 'both'
   created_at: string
 }
 
