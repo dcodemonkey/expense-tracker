@@ -67,10 +67,14 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+import uuid
+
 async def _issue_token_pair(user: UserModel, db: AsyncSession) -> dict:
-    """Mint an access token and a persisted, revocable refresh token."""
+    """Mint an access token, set active session ID for single-device login, and persist refresh token."""
     access_token = create_access_token(subject=user.id)
     raw_refresh = generate_refresh_token()
+    session_id = str(uuid.uuid4())
+    user.active_session_id = session_id
     db.add(
         RefreshToken(
             user_id=user.id,
@@ -79,7 +83,12 @@ async def _issue_token_pair(user: UserModel, db: AsyncSession) -> dict:
         )
     )
     await db.commit()
-    return {"access_token": access_token, "refresh_token": raw_refresh, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "refresh_token": raw_refresh,
+        "session_id": session_id,
+        "token_type": "bearer",
+    }
 
 
 async def _send_verification(user: UserModel) -> None:

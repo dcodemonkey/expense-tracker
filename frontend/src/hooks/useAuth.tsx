@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { authApi, storeTokens, clearTokens, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../lib/api'
+import { authApi, storeTokens, clearTokens, ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, SESSION_ID_KEY } from '../lib/api'
 import type { User } from '../types'
+import RemoteLogoutModal from '../components/RemoteLogoutModal'
 
 interface AuthContextType {
   user: User | null
@@ -16,11 +17,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isRemoteLoggedOut, setIsRemoteLoggedOut] = useState(false)
+
+  const verifySessionIntegrity = (fetchedUser: User & { active_session_id?: string }) => {
+    const localSessionId = localStorage.getItem(SESSION_ID_KEY)
+    if (localSessionId && fetchedUser.active_session_id && localSessionId !== fetchedUser.active_session_id) {
+      setIsRemoteLoggedOut(true)
+    }
+  }
 
   const refreshUser = async () => {
     try {
       const response = await authApi.me()
-      setUser(response.data)
+      const fetchedUser = response.data
+      setUser(fetchedUser)
+      verifySessionIntegrity(fetchedUser)
     } catch {
       setUser(null)
       clearTokens()
@@ -63,17 +74,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     resetInactivityTimer()
 
-    // Background session heartbeat every 10 minutes to keep active sessions fresh
-    const heartbeatId = setInterval(() => {
+    // Frequent multi-device session check (every 10 seconds)
+    const sessionCheckId = setInterval(() => {
       const activeToken = localStorage.getItem(ACCESS_TOKEN_KEY)
       if (activeToken) {
-        authApi.me().catch(() => {})
+        authApi.me().then((res) => {
+          verifySessionIntegrity(res.data)
+        }).catch(() => {})
       }
-    }, 10 * 60 * 1000)
+    }, 10 * 1000)
 
     return () => {
       if (inactivityTimer) clearTimeout(inactivityTimer)
-      clearInterval(heartbeatId)
+      clearInterval(sessionCheckId)
       activityEvents.forEach((event) => {
         window.removeEventListener(event, resetInactivityTimer)
       })
@@ -95,7 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
     if (refreshToken) {
-      // Best-effort server-side revocation; ignore failures.
       authApi.logout(refreshToken).catch(() => {})
     }
     clearTokens()
@@ -105,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
+      <RemoteLogoutModal isOpen={isRemoteLoggedOut} />
     </AuthContext.Provider>
   )
 }

@@ -20,6 +20,7 @@ export default function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isInactiveReason = searchParams.get('reason') === 'inactivity'
+  const isMultiDeviceReason = searchParams.get('reason') === 'multi_device'
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -61,6 +62,13 @@ export default function Login() {
           <div className="flex items-center gap-2.5 p-3.5 bg-amber-soft border border-amber/30 rounded-xl text-amber text-xs font-medium animate-fade-in">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>You have been automatically logged out due to 15 minutes of inactivity for your security.</span>
+          </div>
+        )}
+
+        {isMultiDeviceReason && !error && (
+          <div className="flex items-center gap-2.5 p-3.5 bg-flame-soft border border-flame/30 rounded-xl text-flame text-xs font-medium animate-fade-in">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>Logged out because your account was accessed from another device or location.</span>
           </div>
         )}
 

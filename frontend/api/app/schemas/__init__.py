@@ -59,6 +59,7 @@ class User(UserBase):
     latitude: Optional[Decimal] = None
     longitude: Optional[Decimal] = None
     last_location_updated_at: Optional[datetime] = None
+    active_session_id: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -73,6 +74,8 @@ class LiveLocationUpdate(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: Optional[str] = None
+    session_id: Optional[str] = None
     token_type: str = "bearer"
 
 
@@ -331,6 +334,7 @@ class CategoryBreakdown(BaseModel):
 class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
+    session_id: Optional[str] = None
     token_type: str = "bearer"
 
 

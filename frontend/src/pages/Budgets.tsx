@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Edit, Trash2, AlertTriangle, Calendar as CalendarIcon, Target } from 'lucide-react'
 import { formatCurrency } from '../lib/utils'
 import { budgetsApi, categoriesApi } from '../lib/api'
-import { BudgetWithProgress, BudgetPeriod, Category } from '../types'
+import { BudgetWithProgress, BudgetPeriod } from '../types'
 import {
   Card,
   CardHeader,
@@ -21,6 +21,7 @@ import {
   EmptyState,
   Skeleton,
 } from '../components/ui'
+import toast from 'react-hot-toast'
 
 interface BudgetFormProps {
   budget?: BudgetWithProgress | null
@@ -60,73 +61,74 @@ function BudgetForm({ budget, onClose }: BudgetFormProps) {
       category_id?: number
       start_date: string
       end_date?: string
-      is_active?: boolean
-    }) => (budget ? budgetsApi.update(budget.id, data) : budgetsApi.create(data)),
+      is_active: boolean
+    }) => {
+      if (budget) {
+        return budgetsApi.update(budget.id, data)
+      }
+      return budgetsApi.create(data)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-insights'] })
+      toast.success(budget ? 'Budget updated successfully' : 'Budget created successfully')
       onClose()
     },
-    onError: (error: any) => {
-      setErrors({ submit: error.response?.data?.detail || 'Failed to save budget' })
+    onError: () => {
+      toast.error(budget ? 'Failed to update budget' : 'Failed to create budget')
     },
   })
 
+  const validate = () => {
+    const newErrors: Record<string, string> = {}
+    if (!formData.name.trim()) newErrors.name = 'Name is required'
+    if (!formData.amount || parseFloat(formData.amount) <= 0) newErrors.amount = 'Enter a valid amount'
+    if (!formData.start_date) newErrors.start_date = 'Start date is required'
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setErrors({})
-
-    if (!formData.name.trim()) {
-      setErrors({ name: 'Name is required' })
-      return
-    }
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      setErrors({ amount: 'Amount must be greater than 0' })
-      return
-    }
-    if (!formData.start_date) {
-      setErrors({ start_date: 'Start date is required' })
-      return
-    }
+    if (!validate()) return
 
     mutation.mutate({
-      name: formData.name,
+      name: formData.name.trim(),
       amount: parseFloat(formData.amount),
       period: formData.period,
+      category_id: formData.category_id ? parseInt(formData.category_id, 10) : undefined,
       start_date: formData.start_date,
-      is_active: formData.is_active,
-      category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
       end_date: formData.end_date || undefined,
+      is_active: formData.is_active,
     })
   }
 
-  const handleChange = (field: string, value: string | boolean) => {
+  const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }))
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
-  const expenseCategories: Category[] =
-    (categories?.data as Category[] | undefined)?.filter(
-      (c) => c.name !== 'Salary' && c.name !== 'Investments'
-    ) || []
+  const expenseCategories = categories?.filter((c) => c.type === 'expense' || c.type === 'both') || []
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {errors.submit && (
-        <div className="text-sm text-flame bg-flame-soft border border-flame/30 p-3 rounded-xl">{errors.submit}</div>
-      )}
-
-      <Field label="Name" htmlFor="budget-name" error={errors.name}>
+      <Field label="Budget Name" htmlFor="budget-name" error={errors.name}>
         <Input
           id="budget-name"
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
-          placeholder="e.g., Monthly Food Budget"
+          placeholder="e.g. Monthly Dining Out"
           invalid={!!errors.name}
-          autoFocus
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Amount" htmlFor="budget-amount" error={errors.amount}>
           <Input
             id="budget-amount"
@@ -164,7 +166,7 @@ function BudgetForm({ budget, onClose }: BudgetFormProps) {
         </Select>
       </Field>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Start Date" htmlFor="budget-start" error={errors.start_date}>
           <Input
             id="budget-start"
@@ -199,7 +201,7 @@ function BudgetForm({ budget, onClose }: BudgetFormProps) {
           Cancel
         </Button>
         <Button type="submit" fullWidth loading={mutation.isPending}>
-          {budget ? 'Update' : 'Create'}
+          {budget ? 'Update Budget' : 'Create Budget'}
         </Button>
       </div>
     </form>
@@ -221,22 +223,24 @@ export default function Budgets() {
     mutationFn: (id: number) => budgetsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-insights'] })
+      toast.success('Budget deleted successfully')
       setDeleteTarget(null)
     },
-    onError: (error: any) => alert(error.response?.data?.detail || 'Failed to delete budget'),
+    onError: () => {
+      toast.error('Failed to delete budget')
+    },
   })
 
-  const budgets: BudgetWithProgress[] = budgetsData?.data || []
-
-  const closeModal = () => {
-    setShowModal(false)
-    setEditingBudget(null)
-  }
+  const budgets = budgetsData || []
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-10 w-32" />
+        </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-40 rounded-2xl" />
@@ -268,13 +272,16 @@ export default function Budgets() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
+      {/* Top Header & Mobile Add Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-semibold text-text-hi">Budgets</h1>
           <p className="text-sm text-text-lo">Set spending limits and track your progress</p>
         </div>
         <Button
+          fullWidth
+          className="sm:w-auto font-semibold shadow-md"
           onClick={() => {
             setEditingBudget(null)
             setShowModal(true)
@@ -285,6 +292,7 @@ export default function Budgets() {
         </Button>
       </div>
 
+      {/* Active Budget Cards with Direct Mobile Edit & Delete Buttons */}
       {activeBudgets.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {activeBudgets.map((budget) => {
@@ -344,12 +352,35 @@ export default function Budgets() {
 
                   <ProgressBar value={progress} tone="auto" />
 
-                  <div className="flex justify-between text-xs text-text-lo">
-                    <span className="tnum">{progress.toFixed(0)}% used</span>
+                  <div className="flex items-center justify-between text-xs text-text-lo pt-1">
+                    <span className="tnum font-medium">{progress.toFixed(0)}% used</span>
                     <span className="flex items-center gap-1">
                       <CalendarIcon className="h-3 w-3" />
                       {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
                     </span>
+                  </div>
+
+                  {/* Touch-Friendly Action Buttons on Cards for Mobile & Desktop */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-hairline/60">
+                    <button
+                      onClick={() => {
+                        setEditingBudget(budget)
+                        setShowModal(true)
+                      }}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-surface-3 hover:bg-surface-1 text-text-hi text-xs font-medium rounded-xl border border-hairline transition-colors"
+                      title="Edit Budget"
+                    >
+                      <Edit className="h-3.5 w-3.5 text-mint" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(budget)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-flame-soft hover:bg-flame/20 text-flame text-xs font-medium rounded-xl border border-flame/30 transition-colors"
+                      title="Delete Budget"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Delete</span>
+                    </button>
                   </div>
                 </CardBody>
               </Card>
@@ -358,95 +389,15 @@ export default function Budgets() {
         </div>
       )}
 
-      {(inactiveBudgets.length > 0 || activeBudgets.length === 0) && budgets.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>All Budgets</CardTitle>
-          </CardHeader>
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Period</th>
-                  <th className="text-right">Amount</th>
-                  <th className="text-right">Spent</th>
-                  <th className="text-right">Progress</th>
-                  <th>Status</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...activeBudgets, ...inactiveBudgets].map((budget) => (
-                  <tr key={budget.id}>
-                    <td className="font-medium">{budget.name}</td>
-                    <td>
-                      {budget.category ? (
-                        <span
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: `${budget.category.color || '#8B7CFF'}22`,
-                            color: budget.category.color || '#8B7CFF',
-                          }}
-                        >
-                          {budget.category.icon} {budget.category.name}
-                        </span>
-                      ) : (
-                        <span className="text-text-lo text-sm">All Categories</span>
-                      )}
-                    </td>
-                    <td>
-                      <Badge tone="primary">{periodLabels[budget.period]}</Badge>
-                    </td>
-                    <td className="text-right font-medium tnum">{formatCurrency(budget.amount)}</td>
-                    <td className="text-right tnum">{formatCurrency(budget.spent_amount)}</td>
-                    <td className="text-right w-32">
-                      <ProgressBar value={budget.progress_percentage} tone="auto" />
-                    </td>
-                    <td>
-                      <Badge tone={budget.is_active ? 'success' : 'gray'}>
-                        {budget.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </td>
-                    <td className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => {
-                            setEditingBudget(budget)
-                            setShowModal(true)
-                          }}
-                          className="p-1.5 rounded-lg text-text-lo hover:text-text-hi hover:bg-white/5"
-                          aria-label="Edit budget"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(budget)}
-                          className="p-1.5 rounded-lg text-text-lo hover:text-flame hover:bg-flame-soft"
-                          aria-label="Delete budget"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
-
+      {/* Empty State when no budgets exist */}
       {budgets.length === 0 && (
-        <Card>
+        <Card className="p-8">
           <EmptyState
-            icon={<Target className="h-6 w-6 text-text-lo" />}
-            title="No budgets yet"
-            description="Create a budget to track your spending limits"
+            icon={Target}
+            title="No budgets created yet"
+            description="Create budgets to control your spending by category or overall total."
             action={
               <Button
-                className="mt-2"
                 onClick={() => {
                   setEditingBudget(null)
                   setShowModal(true)
@@ -460,38 +411,117 @@ export default function Budgets() {
         </Card>
       )}
 
+      {/* Inactive or All Budgets Table */}
+      {budgets.length > 0 && (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>All Registered Budgets</CardTitle>
+          </CardHeader>
+          <div className="table-container overflow-x-auto">
+            <table className="table w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-hairline bg-surface-3/50 text-xs font-semibold text-text-lo">
+                  <th className="p-3">Name</th>
+                  <th className="p-3">Category</th>
+                  <th className="p-3">Period</th>
+                  <th className="p-3 text-right">Amount</th>
+                  <th className="p-3 text-right">Spent</th>
+                  <th className="p-3 text-right">Progress</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-hairline">
+                {budgets.map((b) => (
+                  <tr key={b.id} className="hover:bg-surface-3/30 transition-colors">
+                    <td className="p-3 font-medium text-text-hi">{b.name}</td>
+                    <td className="p-3 text-text-lo">
+                      {b.category?.name ? `${b.category.icon || ''} ${b.category.name}` : 'All Categories'}
+                    </td>
+                    <td className="p-3">
+                      <Badge tone="primary">{periodLabels[b.period]}</Badge>
+                    </td>
+                    <td className="p-3 text-right font-mono">
+                      {formatCurrency(b.amount)}
+                    </td>
+                    <td className="p-3 text-right font-mono">
+                      {formatCurrency(b.spent_amount)}
+                    </td>
+                    <td className="p-3 text-right font-mono">
+                      {b.progress_percentage.toFixed(0)}%
+                    </td>
+                    <td className="p-3">
+                      <Badge tone={b.is_active ? 'success' : 'neutral'}>
+                        {b.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => {
+                            setEditingBudget(b)
+                            setShowModal(true)
+                          }}
+                          className="p-1.5 text-text-lo hover:text-mint rounded-lg hover:bg-surface-3 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(b)}
+                          className="p-1.5 text-text-lo hover:text-flame rounded-lg hover:bg-surface-3 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Modal for Creating & Editing Budgets */}
       <Modal
-        open={showModal || !!editingBudget}
-        onClose={closeModal}
-        title={editingBudget ? 'Edit Budget' : 'Create Budget'}
+        open={showModal}
+        onClose={() => {
+          setShowModal(false)
+          setEditingBudget(null)
+        }}
+        title={editingBudget ? 'Edit Budget' : 'Add New Budget'}
       >
-        <BudgetForm budget={editingBudget} onClose={closeModal} />
+        <BudgetForm
+          budget={editingBudget}
+          onClose={() => {
+            setShowModal(false)
+            setEditingBudget(null)
+          }}
+        />
       </Modal>
 
-      <Modal
-        open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title="Delete budget"
-        size="sm"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>
+      {/* Modal for Confirming Delete */}
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Budget">
+        <div className="space-y-4">
+          <p className="text-sm text-text-lo">
+            Are you sure you want to delete <strong className="text-text-hi">{deleteTarget?.name}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="secondary" fullWidth onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
             <Button
               variant="danger"
-              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+              fullWidth
               loading={deleteMutation.isPending}
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
             >
               Delete
             </Button>
-          </>
-        }
-      >
-        <p className="text-sm text-text-lo">
-          Are you sure you want to delete{' '}
-          <span className="font-medium text-text-hi">{deleteTarget?.name}</span>? This action cannot be undone.
-        </p>
+          </div>
+        </div>
       </Modal>
     </div>
   )

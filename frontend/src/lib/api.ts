@@ -3,6 +3,7 @@ import axios from 'axios'
 const API_BASE_URL = ((import.meta as any).env?.VITE_API_URL) || '/api/v1'
 export const ACCESS_TOKEN_KEY = 'expense_tracker_access_token'
 export const REFRESH_TOKEN_KEY = 'expense_tracker_refresh_token'
+export const SESSION_ID_KEY = 'expense_tracker_session_id'
 
 export function getStoredAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY)
@@ -12,16 +13,20 @@ export function getStoredRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_TOKEN_KEY)
 }
 
-export function storeTokens(tokens: { access_token: string; refresh_token?: string }) {
+export function storeTokens(tokens: { access_token: string; refresh_token?: string; session_id?: string }) {
   localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token)
   if (tokens.refresh_token) {
     localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token)
+  }
+  if (tokens.session_id) {
+    localStorage.setItem(SESSION_ID_KEY, tokens.session_id)
   }
 }
 
 export function clearTokens() {
   localStorage.removeItem(ACCESS_TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
+  localStorage.removeItem(SESSION_ID_KEY)
 }
 
 export const api = axios.create({
