@@ -36,8 +36,8 @@ const navigation = [
 const mobileNav = [
   { name: 'Home', href: '/dashboard', icon: Home },
   { name: 'Activity', href: '/transactions', icon: CreditCard },
-  { name: 'Budgets', href: '/budgets', icon: Target },
   { name: 'Insights', href: '/insights', icon: BarChart3 },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 function BrandMark() {
@@ -163,30 +163,30 @@ export default function Layout() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between h-14 px-4 border-b border-hairline bg-ink/80 backdrop-blur-xl">
+      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between h-14 px-2.5 sm:px-4 border-b border-hairline bg-ink/90 backdrop-blur-xl gap-1">
         <BrandMark />
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           <LiveLocationTracker />
           <NavLink
             to="/settings"
             className="text-text-lo hover:text-text-hi p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
             title="Account Settings"
           >
-            <Settings className="h-5 w-5 text-mint" />
+            <Settings className="h-4.5 w-4.5 text-mint" />
           </NavLink>
           <button
             onClick={toggleTheme}
             className="text-text-lo hover:text-text-hi p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
             title="Toggle theme"
           >
-            {theme === 'dark' ? <Sun className="h-5 w-5 text-amber" /> : <Moon className="h-5 w-5 text-violet" />}
+            {theme === 'dark' ? <Sun className="h-4.5 w-4.5 text-amber" /> : <Moon className="h-4.5 w-4.5 text-violet" />}
           </button>
           <button
             onClick={logout}
-            className="text-text-lo hover:text-flame p-2 rounded-lg hover:bg-surface-2 transition-colors"
+            className="text-text-lo hover:text-flame p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
             title="Log out"
           >
-            <LogOut className="h-5 w-5" />
+            <LogOut className="h-4.5 w-4.5" />
           </button>
         </div>
       </header>
