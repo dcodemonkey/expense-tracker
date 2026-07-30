@@ -48,9 +48,12 @@ function BudgetForm({ budget, onClose }: BudgetFormProps) {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const { data: categories } = useQuery({
+  const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => categoriesApi.list(),
+    queryFn: async () => {
+      const res = await categoriesApi.list()
+      return res.data
+    },
   })
 
   const mutation = useMutation({
@@ -214,9 +217,12 @@ export default function Budgets() {
   const [editingBudget, setEditingBudget] = useState<BudgetWithProgress | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BudgetWithProgress | null>(null)
 
-  const { data: budgetsData, isLoading } = useQuery({
+  const { data: budgets = [], isLoading } = useQuery<BudgetWithProgress[]>({
     queryKey: ['budgets'],
-    queryFn: () => budgetsApi.list(),
+    queryFn: async () => {
+      const res = await budgetsApi.list()
+      return res.data
+    },
   })
 
   const deleteMutation = useMutation({
@@ -231,8 +237,6 @@ export default function Budgets() {
       toast.error('Failed to delete budget')
     },
   })
-
-  const budgets = budgetsData || []
 
   if (isLoading) {
     return (
@@ -393,7 +397,7 @@ export default function Budgets() {
       {budgets.length === 0 && (
         <Card className="p-8">
           <EmptyState
-            icon={Target}
+            icon={<Target className="h-8 w-8 text-mint" />}
             title="No budgets created yet"
             description="Create budgets to control your spending by category or overall total."
             action={
@@ -451,7 +455,7 @@ export default function Budgets() {
                       {b.progress_percentage.toFixed(0)}%
                     </td>
                     <td className="p-3">
-                      <Badge tone={b.is_active ? 'success' : 'neutral'}>
+                      <Badge tone={b.is_active ? 'success' : 'gray'}>
                         {b.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>

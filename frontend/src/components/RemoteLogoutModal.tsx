@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, ShieldAlert, LogOut } from 'lucide-react'
+import { ShieldAlert, LogOut } from 'lucide-react'
 import { clearTokens } from '../lib/api'
 
 interface RemoteLogoutModalProps {
