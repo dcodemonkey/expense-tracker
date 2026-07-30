@@ -1,12 +1,28 @@
 import { useEffect, useState } from 'react'
-import { usersApi } from '../lib/api'
+import { usersApi, ACCESS_TOKEN_KEY } from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 import { Navigation, ExternalLink } from 'lucide-react'
 
 export default function LiveLocationTracker() {
+  const { user } = useAuth()
   const [currentLocation, setCurrentLocation] = useState<string | null>(null)
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
 
   useEffect(() => {
+    // Only track location if user is actively logged in
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY)
+    if (!user || !token) return
+
+    const sendLocationUpdate = async (latitude: number, longitude: number, locationName: string) => {
+      const activeToken = localStorage.getItem(ACCESS_TOKEN_KEY)
+      if (!activeToken) return
+      try {
+        await usersApi.updateLiveLocation({ latitude, longitude, location_name: locationName })
+      } catch {
+        // Silently ignore 401 or network errors for background location updates
+      }
+    }
+
     const trackLocationHighAccuracy = () => {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
@@ -14,7 +30,6 @@ export default function LiveLocationTracker() {
             const { latitude, longitude } = pos.coords
             setCoords({ latitude, longitude })
 
-            // Reverse geocode via BigDataCloud or Nominatim for exact area name
             try {
               const revRes = await fetch(
                 `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
@@ -24,7 +39,7 @@ export default function LiveLocationTracker() {
                 const locality = revData.locality || revData.city || revData.principalSubdivision
                 const locName = locality ? `${locality}, ${revData.principalSubdivision || ''}` : `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
                 setCurrentLocation(locName)
-                await usersApi.updateLiveLocation({ latitude, longitude, location_name: locName }).catch(() => {})
+                sendLocationUpdate(latitude, longitude, locName)
                 return
               }
             } catch {
@@ -33,7 +48,7 @@ export default function LiveLocationTracker() {
 
             const fallbackName = `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
             setCurrentLocation(fallbackName)
-            await usersApi.updateLiveLocation({ latitude, longitude, location_name: fallbackName }).catch(() => {})
+            sendLocationUpdate(latitude, longitude, fallbackName)
           },
           () => {
             fallbackIpTracking()
@@ -59,7 +74,7 @@ export default function LiveLocationTracker() {
 
         setCoords({ latitude, longitude })
         setCurrentLocation(locName)
-        await usersApi.updateLiveLocation({ latitude, longitude, location_name: locName }).catch(() => {})
+        sendLocationUpdate(latitude, longitude, locName)
       } catch (err) {
         console.warn('Location tracking error:', err)
       }
@@ -69,9 +84,9 @@ export default function LiveLocationTracker() {
 
     const intervalId = setInterval(trackLocationHighAccuracy, 60 * 1000)
     return () => clearInterval(intervalId)
-  }, [])
+  }, [user])
 
-  if (!currentLocation || !coords) return null
+  if (!user || !currentLocation || !coords) return null
 
   const mapsUrl = `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}`
 
