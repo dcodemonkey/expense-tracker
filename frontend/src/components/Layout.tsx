@@ -132,26 +132,39 @@ export default function Layout() {
         className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 border-r border-hairline bg-surface/40 backdrop-blur-xl transition-[width] duration-200 ease-out z-30 group/sidebar"
       >
         {/* Sidebar Header */}
-        <div className={cn("h-16 flex items-center justify-between border-b border-hairline/60 shrink-0 px-3.5", isCollapsed && "px-2 justify-center gap-2")}>
-          <BrandMark collapsed={isCollapsed} />
-          <div className="flex items-center gap-1 shrink-0">
-            {!isCollapsed && (
+        <div className="h-16 flex items-center justify-between border-b border-hairline/60 shrink-0 px-3.5">
+          {!isCollapsed ? (
+            <>
+              <BrandMark />
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={toggleTheme}
+                  className="text-text-lo hover:text-text-hi p-1.5 rounded-xl hover:bg-surface-2 transition-colors border border-hairline shrink-0"
+                  title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                >
+                  {theme === 'dark' ? <Sun className="h-4 w-4 text-amber" /> : <Moon className="h-4 w-4 text-violet" />}
+                </button>
+                <button
+                  onClick={toggleCollapse}
+                  className="text-text-lo hover:text-text-hi p-1.5 rounded-xl hover:bg-surface-2 transition-colors border border-hairline shrink-0"
+                  title="Collapse sidebar"
+                >
+                  <ChevronLeft className="h-4 w-4 text-mint" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-center">
               <button
-                onClick={toggleTheme}
-                className="text-text-lo hover:text-text-hi p-1.5 rounded-xl hover:bg-surface-2 transition-colors border border-hairline shrink-0"
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                onClick={toggleCollapse}
+                className="group/btn relative grid place-items-center w-10 h-10 rounded-xl bg-surface-2 hover:bg-mint-soft border border-hairline hover:border-mint/40 text-mint transition-all cursor-pointer shadow-sm"
+                title="Expand sidebar"
               >
-                {theme === 'dark' ? <Sun className="h-4 w-4 text-amber" /> : <Moon className="h-4 w-4 text-violet" />}
+                <Wallet className="w-5 h-5 group-hover/btn:opacity-0 transition-opacity" strokeWidth={2.4} />
+                <ChevronRight className="w-5 h-5 absolute inset-0 m-auto opacity-0 group-hover/btn:opacity-100 transition-opacity text-mint" />
               </button>
-            )}
-            <button
-              onClick={toggleCollapse}
-              className="text-text-lo hover:text-text-hi p-1.5 rounded-xl hover:bg-surface-2 transition-colors border border-hairline shrink-0"
-              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {isCollapsed ? <ChevronRight className="h-4 w-4 text-mint" /> : <ChevronLeft className="h-4 w-4 text-mint" />}
-            </button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Widgets section */}
