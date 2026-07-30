@@ -20,6 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   GripVertical,
+  Menu,
+  X,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import LiveLocationTracker from './LiveLocationTracker'
@@ -40,7 +42,7 @@ const navigation = [
 const mobileNav = [
   { name: 'Home', href: '/dashboard', icon: Home },
   { name: 'Activity', href: '/transactions', icon: CreditCard },
-  { name: 'Insights', href: '/insights', icon: BarChart3 },
+  { name: 'Budgets', href: '/budgets', icon: Target },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
@@ -69,6 +71,12 @@ export default function Layout() {
   const location = useLocation()
 
   const [isParseModalOpen, setIsParseModalOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [location.pathname])
 
   // Resizable & Collapsible Sidebar State
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -312,7 +320,17 @@ export default function Layout() {
 
       {/* Mobile top bar */}
       <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between h-14 px-2.5 sm:px-4 border-b border-hairline bg-ink/90 backdrop-blur-xl gap-1">
-        <BrandMark />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+            className="p-1.5 text-text-lo hover:text-text-hi bg-surface-2 hover:bg-surface-1 border border-hairline rounded-xl transition-colors"
+            title="Toggle Navigation Menu"
+          >
+            {isMobileMenuOpen ? <X className="h-5 w-5 text-flame" /> : <Menu className="h-5 w-5 text-mint" />}
+          </button>
+          <BrandMark />
+        </div>
+
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           <LiveLocationTracker />
           <NavLink
@@ -338,6 +356,81 @@ export default function Layout() {
           </button>
         </div>
       </header>
+
+      {/* Mobile Slide-Over Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex animate-fade-in">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          <div className="relative w-4/5 max-w-sm bg-surface border-r border-hairline h-full flex flex-col p-4 space-y-4 shadow-2xl z-10 overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <BrandMark />
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1.5 text-text-lo hover:text-text-hi rounded-lg hover:bg-surface-2"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <WeatherWidget />
+              <PWAInstallPrompt />
+            </div>
+
+            <nav className="space-y-1 flex-1">
+              {navigation.map((item) => {
+                const Icon = item.icon
+                return (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      cn('sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium', isActive && 'sidebar-link-active')
+                    }
+                  >
+                    <Icon className="h-5 w-5 shrink-0 text-mint" />
+                    <span>{item.name}</span>
+                  </NavLink>
+                )
+              })}
+
+              {user?.role === 'admin' && (
+                <NavLink
+                  to="/admin/users"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      'sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-mint bg-mint-soft/30 border border-mint/20 mt-2',
+                      isActive && 'bg-mint-soft border-mint/40 font-bold'
+                    )
+                  }
+                >
+                  <Users className="h-5 w-5 shrink-0 text-mint" />
+                  <span>User Admin</span>
+                </NavLink>
+              )}
+            </nav>
+
+            <div className="pt-3 border-t border-hairline space-y-2">
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  setIsParseModalOpen(true)
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-violet-soft text-violet border border-violet/30 rounded-xl text-xs font-bold"
+              >
+                <Sparkles className="w-4 h-4 text-violet animate-pulse" />
+                <span>Smart Parse SMS</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <main
