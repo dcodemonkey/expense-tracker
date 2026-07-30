@@ -4,4 +4,4 @@ src = r"d:\Projects\expense-tracker\android-app\app\build\outputs\apk\debug\app-
 dst = r"d:\Projects\expense-tracker\frontend\public\expense-tracker.apk"
 
 shutil.copy2(src, dst)
-print("Copied APK to destination:", dst)
+print("Copied updated APK to frontend/public/expense-tracker.apk!")

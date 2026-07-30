@@ -135,7 +135,8 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(UserModel).where(UserModel.email == form_data.username))
+    email_clean = form_data.username.strip().lower() if form_data.username else ""
+    result = await db.execute(select(UserModel).where(func.lower(UserModel.email) == email_clean))
     user = result.scalar_one_or_none()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
