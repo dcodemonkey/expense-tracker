@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Edit, Trash2, AlertTriangle, Calendar as CalendarIcon, Target } from 'lucide-react'
 import { formatCurrency } from '../lib/utils'
 import { budgetsApi, categoriesApi } from '../lib/api'
-import { BudgetWithProgress, BudgetPeriod } from '../types'
+import { BudgetWithProgress, BudgetPeriod, Category } from '../types'
 import {
   Card,
   CardHeader,
@@ -255,7 +255,6 @@ export default function Budgets() {
   }
 
   const activeBudgets = budgets.filter((b) => b.is_active)
-  const inactiveBudgets = budgets.filter((b) => !b.is_active)
 
   const getPeriodEnd = (budget: BudgetWithProgress) => {
     const today = new Date()
