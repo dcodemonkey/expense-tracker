@@ -32,3 +32,4 @@ async def init_db() -> None:
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS latitude NUMERIC(10, 7);"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS longitude NUMERIC(10, 7);"))
         await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_location_updated_at TIMESTAMPTZ;"))
+        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session_id VARCHAR(255);"))
