@@ -132,16 +132,18 @@ export default function Layout() {
         className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 border-r border-hairline bg-surface/40 backdrop-blur-xl transition-[width] duration-200 ease-out z-30 group/sidebar"
       >
         {/* Sidebar Header */}
-        <div className="h-16 flex items-center justify-between px-3.5 border-b border-hairline/60 shrink-0">
+        <div className={cn("h-16 flex items-center justify-between border-b border-hairline/60 shrink-0 px-3.5", isCollapsed && "px-2 justify-center gap-2")}>
           <BrandMark collapsed={isCollapsed} />
-          <div className="flex items-center gap-1">
-            <button
-              onClick={toggleTheme}
-              className="text-text-lo hover:text-text-hi p-1.5 rounded-xl hover:bg-surface-2 transition-colors border border-hairline shrink-0"
-              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4 text-amber" /> : <Moon className="h-4 w-4 text-violet" />}
-            </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {!isCollapsed && (
+              <button
+                onClick={toggleTheme}
+                className="text-text-lo hover:text-text-hi p-1.5 rounded-xl hover:bg-surface-2 transition-colors border border-hairline shrink-0"
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4 text-amber" /> : <Moon className="h-4 w-4 text-violet" />}
+              </button>
+            )}
             <button
               onClick={toggleCollapse}
               className="text-text-lo hover:text-text-hi p-1.5 rounded-xl hover:bg-surface-2 transition-colors border border-hairline shrink-0"
@@ -228,7 +230,17 @@ export default function Layout() {
 
         {/* User profile section */}
         <div className="p-2.5 border-t border-hairline shrink-0">
-          <div className={cn('flex items-center gap-2 px-1 py-1.5', isCollapsed && 'justify-center')}>
+          <div className={cn('flex items-center gap-2 px-1 py-1.5', isCollapsed && 'flex-col justify-center gap-2')}>
+            {isCollapsed && (
+              <button
+                onClick={toggleTheme}
+                className="text-text-lo hover:text-text-hi p-1.5 rounded-xl hover:bg-surface-2 transition-colors border border-hairline shrink-0"
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4 text-amber" /> : <Moon className="h-4 w-4 text-violet" />}
+              </button>
+            )}
+
             <NavLink
               to="/settings"
               className="flex items-center gap-2.5 min-w-0 flex-1 group hover:opacity-90 transition-opacity"
