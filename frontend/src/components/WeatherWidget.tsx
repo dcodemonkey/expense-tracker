@@ -32,20 +32,40 @@ export default function WeatherWidget() {
       try {
         let finalLocName = defaultName
 
-        // Reverse geocode to get exact locality name
+        // Reverse geocode to get exact street, colony, and locality name
         try {
-          const revRes = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+          const nomRes = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en' } }
           )
-          if (revRes.ok) {
-            const revData = await revRes.json()
-            const locality = revData.locality || revData.city || revData.principalSubdivision
-            if (locality) {
-              finalLocName = `${locality}, ${revData.principalSubdivision || ''}`
+          if (nomRes.ok) {
+            const nomData = await nomRes.json()
+            const addr = nomData.address || {}
+            const street = addr.road || addr.street || addr.pedestrian
+            const colony = addr.suburb || addr.neighbourhood || addr.residential || addr.colony || addr.quarter
+            const city = addr.city || addr.town || addr.city_district || addr.state_district
+
+            const parts = [street, colony, city].filter(Boolean)
+            if (parts.length > 0) {
+              finalLocName = parts.join(', ')
             }
           }
         } catch {
-          // Ignored
+          // Fallback to BigDataCloud
+          try {
+            const revRes = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+            )
+            if (revRes.ok) {
+              const revData = await revRes.json()
+              const locality = revData.locality || revData.city || revData.principalSubdivision
+              if (locality) {
+                finalLocName = `${locality}, ${revData.principalSubdivision || ''}`
+              }
+            }
+          } catch {
+            // Ignored
+          }
         }
 
         const [wRes, aRes] = await Promise.all([

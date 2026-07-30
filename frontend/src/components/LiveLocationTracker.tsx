@@ -30,6 +30,32 @@ export default function LiveLocationTracker() {
             const { latitude, longitude } = pos.coords
             setCoords({ latitude, longitude })
 
+            // 1. Try OpenStreetMap Nominatim for exact street, road, colony & locality
+            try {
+              const nomRes = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+                { headers: { 'Accept-Language': 'en' } }
+              )
+              if (nomRes.ok) {
+                const nomData = await nomRes.json()
+                const addr = nomData.address || {}
+                const street = addr.road || addr.street || addr.pedestrian
+                const colony = addr.suburb || addr.neighbourhood || addr.residential || addr.colony || addr.quarter
+                const city = addr.city || addr.town || addr.city_district || addr.state_district
+
+                const parts = [street, colony, city].filter(Boolean)
+                if (parts.length > 0) {
+                  const exactName = parts.join(', ')
+                  setCurrentLocation(exactName)
+                  sendLocationUpdate(latitude, longitude, exactName)
+                  return
+                }
+              }
+            } catch {
+              // Fallback to BigDataCloud if Nominatim fails
+            }
+
+            // 2. Fallback to BigDataCloud
             try {
               const revRes = await fetch(
                 `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
@@ -95,8 +121,8 @@ export default function LiveLocationTracker() {
       href={mapsUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-mint-soft hover:bg-mint/20 text-mint rounded-xl text-xs font-medium border border-mint/30 transition-all shadow-sm hover:shadow-md animate-fade-in cursor-pointer shrink-0 max-w-[130px] xs:max-w-[150px] sm:max-w-[190px]"
-      title={`Exact GPS Location: ${currentLocation}. Click to open in Google Maps.`}
+      className="group flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-mint-soft hover:bg-mint/20 text-mint rounded-xl text-xs font-medium border border-mint/30 transition-all shadow-sm hover:shadow-md animate-fade-in cursor-pointer shrink-0 max-w-[150px] xs:max-w-[180px] sm:max-w-[240px]"
+      title={`Exact Street & Locality GPS: ${currentLocation}. Click to open in Google Maps.`}
     >
       <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"></span>
