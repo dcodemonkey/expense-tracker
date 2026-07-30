@@ -20,6 +20,8 @@ import { cn } from '../lib/utils'
 import LiveLocationTracker from './LiveLocationTracker'
 import WeatherWidget from './WeatherWidget'
 import PWAInstallPrompt from './PWAInstallPrompt'
+import QuickParseModal from './QuickParseModal'
+import { Sparkles } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -55,6 +57,7 @@ export default function Layout() {
   const { user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const location = useLocation()
+  const [isParseModalOpen, setIsParseModalOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-ink">
@@ -110,7 +113,14 @@ export default function Layout() {
           )}
         </nav>
 
-        <div className="p-3">
+        <div className="p-3 space-y-2">
+          <button
+            onClick={() => setIsParseModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-violet-soft hover:bg-violet/20 text-violet border border-violet/30 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+          >
+            <Sparkles className="w-4 h-4 text-violet animate-pulse" />
+            <span>Smart Parse SMS</span>
+          </button>
           <NavLink to="/transactions/new" className="btn-primary w-full">
             <Plus className="h-4 w-4" />
             Add transaction
@@ -119,15 +129,28 @@ export default function Layout() {
 
         <div className="p-3 border-t border-hairline">
           <div className="flex items-center gap-3 px-2 py-1.5">
-            <div className="grid place-items-center w-9 h-9 rounded-full bg-violet-soft text-violet">
-              <User className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-text-hi truncate">
-                {user?.full_name || 'Account'}
-              </p>
-              <p className="text-xs text-text-lo truncate">{user?.email}</p>
-            </div>
+            <NavLink
+              to="/settings"
+              className="flex items-center gap-3 min-w-0 flex-1 group hover:opacity-90 transition-opacity"
+              title="View & edit account settings"
+            >
+              <div className="grid place-items-center w-9 h-9 rounded-full bg-violet-soft text-violet group-hover:bg-violet group-hover:text-white transition-colors">
+                <User className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-text-hi truncate group-hover:text-mint transition-colors">
+                  {user?.full_name || 'Account'}
+                </p>
+                <p className="text-xs text-text-lo truncate">{user?.email}</p>
+              </div>
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className="text-text-lo hover:text-text-hi p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
+              title="Settings"
+            >
+              <Settings className="h-4 w-4" />
+            </NavLink>
             <button
               onClick={logout}
               className="text-text-lo hover:text-flame p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
@@ -144,6 +167,13 @@ export default function Layout() {
         <BrandMark />
         <div className="flex items-center gap-1.5">
           <LiveLocationTracker />
+          <NavLink
+            to="/settings"
+            className="text-text-lo hover:text-text-hi p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
+            title="Account Settings"
+          >
+            <Settings className="h-5 w-5 text-mint" />
+          </NavLink>
           <button
             onClick={toggleTheme}
             className="text-text-lo hover:text-text-hi p-1.5 rounded-lg hover:bg-surface-2 transition-colors"
@@ -190,6 +220,8 @@ export default function Layout() {
           ))}
         </div>
       </nav>
+
+      <QuickParseModal isOpen={isParseModalOpen} onClose={() => setIsParseModalOpen(false)} />
     </div>
   )
 }

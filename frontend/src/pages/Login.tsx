@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useNavigate, Link } from 'react-router-dom'
+import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import AuthShell from '../components/AuthShell'
@@ -18,6 +18,8 @@ type LoginForm = z.infer<typeof loginSchema>
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const isInactiveReason = searchParams.get('reason') === 'inactivity'
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -55,6 +57,13 @@ export default function Login() {
       }
     >
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+        {isInactiveReason && !error && (
+          <div className="flex items-center gap-2.5 p-3.5 bg-amber-soft border border-amber/30 rounded-xl text-amber text-xs font-medium animate-fade-in">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>You have been automatically logged out due to 15 minutes of inactivity for your security.</span>
+          </div>
+        )}
+
         {error && (
           <div className="flex items-center gap-2 p-3 bg-flame-soft border border-flame/30 rounded-xl text-flame text-sm">
             <AlertCircle className="h-5 w-5 shrink-0" />

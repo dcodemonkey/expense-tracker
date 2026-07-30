@@ -37,15 +37,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     }
 
-    // Background session heartbeat every 15 minutes to keep tokens & sessions active indefinitely
+    // Inactivity Session Timeout Manager (15 Minutes)
+    const INACTIVITY_LIMIT_MS = 15 * 60 * 1000 // 15 minutes
+    let inactivityTimer: NodeJS.Timeout | null = null
+
+    const handleInactivityLogout = () => {
+      if (localStorage.getItem(ACCESS_TOKEN_KEY)) {
+        clearTokens()
+        setUser(null)
+        window.location.href = '/login?reason=inactivity'
+      }
+    }
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer)
+      if (localStorage.getItem(ACCESS_TOKEN_KEY)) {
+        inactivityTimer = setTimeout(handleInactivityLogout, INACTIVITY_LIMIT_MS)
+      }
+    }
+
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, resetInactivityTimer)
+    })
+
+    resetInactivityTimer()
+
+    // Background session heartbeat every 10 minutes to keep active sessions fresh
     const heartbeatId = setInterval(() => {
       const activeToken = localStorage.getItem(ACCESS_TOKEN_KEY)
       if (activeToken) {
         authApi.me().catch(() => {})
       }
-    }, 15 * 60 * 1000)
+    }, 10 * 60 * 1000)
 
-    return () => clearInterval(heartbeatId)
+    return () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer)
+      clearInterval(heartbeatId)
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, resetInactivityTimer)
+      })
+    }
   }, [])
 
   const login = async (email: string, password: string) => {
