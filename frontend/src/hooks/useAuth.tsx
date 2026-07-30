@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Inactivity Session Timeout Manager (15 Minutes)
     const INACTIVITY_LIMIT_MS = 15 * 60 * 1000 // 15 minutes
-    let inactivityTimer: NodeJS.Timeout | null = null
+    let inactivityTimer: ReturnType<typeof setTimeout> | null = null
 
     const handleInactivityLogout = () => {
       if (localStorage.getItem(ACCESS_TOKEN_KEY)) {

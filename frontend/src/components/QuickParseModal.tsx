@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { transactionsApi, syncApi } from '../lib/api'
-import { Sparkles, X, Check, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
+import { syncApi } from '../lib/api'
+import { Sparkles, X, ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface QuickParseModalProps {
