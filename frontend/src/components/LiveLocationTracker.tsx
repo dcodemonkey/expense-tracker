@@ -7,38 +7,42 @@ export default function LiveLocationTracker() {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
 
   useEffect(() => {
-    const trackLocationSmart = async () => {
-      // 1. Check if browser has ALREADY granted GPS permission silently
-      let permissionState: PermissionState | null = null
-      try {
-        if ('permissions' in navigator && navigator.permissions.query) {
-          const status = await navigator.permissions.query({ name: 'geolocation' })
-          permissionState = status.state
-        }
-      } catch {
-        // Ignored
-      }
-
-      // 2. If GPS permission was already granted by user in past, use exact Hardware GPS!
-      if (permissionState === 'granted' && 'geolocation' in navigator) {
+    const trackLocationHighAccuracy = () => {
+      if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
             const { latitude, longitude } = pos.coords
             setCoords({ latitude, longitude })
-            const locName = `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-            setCurrentLocation(locName)
-            await usersApi.updateLiveLocation({ latitude, longitude, location_name: locName }).catch(() => {})
+
+            // Reverse geocode via BigDataCloud or Nominatim for exact area name
+            try {
+              const revRes = await fetch(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+              )
+              if (revRes.ok) {
+                const revData = await revRes.json()
+                const locality = revData.locality || revData.city || revData.principalSubdivision
+                const locName = locality ? `${locality}, ${revData.principalSubdivision || ''}` : `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+                setCurrentLocation(locName)
+                await usersApi.updateLiveLocation({ latitude, longitude, location_name: locName }).catch(() => {})
+                return
+              }
+            } catch {
+              // Fallback
+            }
+
+            const fallbackName = `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+            setCurrentLocation(fallbackName)
+            await usersApi.updateLiveLocation({ latitude, longitude, location_name: fallbackName }).catch(() => {})
           },
           () => {
             fallbackIpTracking()
           },
-          { timeout: 5000, maximumAge: 60000 }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
         )
-        return
+      } else {
+        fallbackIpTracking()
       }
-
-      // 3. Otherwise, use Silent IP Geolocation — ZERO POPUP GUARANTEED!
-      fallbackIpTracking()
     }
 
     const fallbackIpTracking = async () => {
@@ -50,21 +54,20 @@ export default function LiveLocationTracker() {
         const longitude = data.longitude
         if (!latitude || !longitude) return
 
-        const parts = [data.city, data.region, data.country_name].filter(Boolean)
+        const parts = [data.city, data.region].filter(Boolean)
         const locName = parts.length > 0 ? parts.join(', ') : `${latitude}, ${longitude}`
 
         setCoords({ latitude, longitude })
         setCurrentLocation(locName)
         await usersApi.updateLiveLocation({ latitude, longitude, location_name: locName }).catch(() => {})
       } catch (err) {
-        console.warn('Silent location tracking error:', err)
+        console.warn('Location tracking error:', err)
       }
     }
 
-    trackLocationSmart()
+    trackLocationHighAccuracy()
 
-    // Auto-update every 90 seconds
-    const intervalId = setInterval(trackLocationSmart, 90 * 1000)
+    const intervalId = setInterval(trackLocationHighAccuracy, 60 * 1000)
     return () => clearInterval(intervalId)
   }, [])
 
@@ -77,8 +80,8 @@ export default function LiveLocationTracker() {
       href={mapsUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-mint-soft hover:bg-mint/20 text-mint rounded-xl text-xs font-medium border border-mint/30 transition-all shadow-sm hover:shadow-md animate-fade-in cursor-pointer shrink-0 max-w-[120px] xs:max-w-[140px] sm:max-w-[180px]"
-      title={`Live GPS Location: ${currentLocation}. Click to open in Google Maps.`}
+      className="group flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-mint-soft hover:bg-mint/20 text-mint rounded-xl text-xs font-medium border border-mint/30 transition-all shadow-sm hover:shadow-md animate-fade-in cursor-pointer shrink-0 max-w-[130px] xs:max-w-[150px] sm:max-w-[190px]"
+      title={`Exact GPS Location: ${currentLocation}. Click to open in Google Maps.`}
     >
       <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint opacity-75"></span>
