@@ -34,7 +34,7 @@ export default function LiveLocationTracker() {
           const addr = nomData.address || {}
           const street = addr.road || addr.street || addr.pedestrian
           const colony = addr.suburb || addr.neighbourhood || addr.residential || addr.colony || addr.quarter
-          const city = addr.city || addr.town || addr.city_district || addr.state_district
+          const city = addr.city || addr.town || addr.city_district || addr.state_district || addr.state
 
           const parts = [street, colony, city].filter(Boolean)
           if (parts.length > 0) {
@@ -129,11 +129,11 @@ export default function LiveLocationTracker() {
       }
     }
 
-    // Immediately trigger location acquisition upon login/mount
+    // Automatically fetch location on mount/login
     trackLocationHighAccuracy()
 
-    // 30-second pulse for real-time multi-location updates
-    const intervalId = setInterval(trackLocationHighAccuracy, 30 * 1000)
+    // Automatically background-fetch location update every 60 seconds
+    const intervalId = setInterval(trackLocationHighAccuracy, 60 * 1000)
     return () => clearInterval(intervalId)
   }, [user])
 
