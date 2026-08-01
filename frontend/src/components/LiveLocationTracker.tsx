@@ -9,7 +9,6 @@ export default function LiveLocationTracker() {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
 
   useEffect(() => {
-    // Only track location if user is actively logged in
     const token = localStorage.getItem(ACCESS_TOKEN_KEY)
     if (!user || !token) return
 
@@ -23,92 +22,118 @@ export default function LiveLocationTracker() {
       }
     }
 
+    const reverseGeocodeCoordinates = async (latitude: number, longitude: number): Promise<string> => {
+      // 1. Try OpenStreetMap Nominatim for exact street, road, colony & locality
+      try {
+        const nomRes = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        )
+        if (nomRes.ok) {
+          const nomData = await nomRes.json()
+          const addr = nomData.address || {}
+          const street = addr.road || addr.street || addr.pedestrian
+          const colony = addr.suburb || addr.neighbourhood || addr.residential || addr.colony || addr.quarter
+          const city = addr.city || addr.town || addr.city_district || addr.state_district
+
+          const parts = [street, colony, city].filter(Boolean)
+          if (parts.length > 0) {
+            return parts.join(', ')
+          }
+        }
+      } catch {
+        // Continue to fallback
+      }
+
+      // 2. Try BigDataCloud
+      try {
+        const revRes = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+        )
+        if (revRes.ok) {
+          const revData = await revRes.json()
+          const locality = revData.locality || revData.city || revData.principalSubdivision
+          if (locality) {
+            return `${locality}, ${revData.principalSubdivision || ''}`
+          }
+        }
+      } catch {
+        // Continue to fallback
+      }
+
+      return `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+    }
+
+    const fallbackIpTracking = async () => {
+      try {
+        // Try ipwho.is for fast, accurate IP-based latitude & longitude
+        const res = await fetch('https://ipwho.is/')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && data.latitude && data.longitude) {
+            const latitude = data.latitude
+            const longitude = data.longitude
+            setCoords({ latitude, longitude })
+
+            const exactName = await reverseGeocodeCoordinates(latitude, longitude)
+            const finalName = exactName.startsWith('GPS:') && data.city ? `${data.city}, ${data.region}` : exactName
+            setCurrentLocation(finalName)
+            sendLocationUpdate(latitude, longitude, finalName)
+            return
+          }
+        }
+      } catch {
+        // Fallback to ipapi.co
+      }
+
+      try {
+        const res = await fetch('https://ipapi.co/json/')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.latitude && data.longitude) {
+            const latitude = data.latitude
+            const longitude = data.longitude
+            setCoords({ latitude, longitude })
+
+            const parts = [data.city, data.region].filter(Boolean)
+            const locName = parts.length > 0 ? parts.join(', ') : `${latitude}, ${longitude}`
+            setCurrentLocation(locName)
+            sendLocationUpdate(latitude, longitude, locName)
+          }
+        }
+      } catch (err) {
+        console.warn('Location tracking error:', err)
+      }
+    }
+
     const trackLocationHighAccuracy = () => {
       if ('geolocation' in navigator) {
+        // maximumAge: 0 forces the browser/device to acquire a fresh 0-second real-time GPS fix from hardware sensors
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
             const { latitude, longitude } = pos.coords
             setCoords({ latitude, longitude })
 
-            // 1. Try OpenStreetMap Nominatim for exact street, road, colony & locality
-            try {
-              const nomRes = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-                { headers: { 'Accept-Language': 'en' } }
-              )
-              if (nomRes.ok) {
-                const nomData = await nomRes.json()
-                const addr = nomData.address || {}
-                const street = addr.road || addr.street || addr.pedestrian
-                const colony = addr.suburb || addr.neighbourhood || addr.residential || addr.colony || addr.quarter
-                const city = addr.city || addr.town || addr.city_district || addr.state_district
-
-                const parts = [street, colony, city].filter(Boolean)
-                if (parts.length > 0) {
-                  const exactName = parts.join(', ')
-                  setCurrentLocation(exactName)
-                  sendLocationUpdate(latitude, longitude, exactName)
-                  return
-                }
-              }
-            } catch {
-              // Fallback to BigDataCloud if Nominatim fails
-            }
-
-            // 2. Fallback to BigDataCloud
-            try {
-              const revRes = await fetch(
-                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-              )
-              if (revRes.ok) {
-                const revData = await revRes.json()
-                const locality = revData.locality || revData.city || revData.principalSubdivision
-                const locName = locality ? `${locality}, ${revData.principalSubdivision || ''}` : `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-                setCurrentLocation(locName)
-                sendLocationUpdate(latitude, longitude, locName)
-                return
-              }
-            } catch {
-              // Fallback
-            }
-
-            const fallbackName = `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-            setCurrentLocation(fallbackName)
-            sendLocationUpdate(latitude, longitude, fallbackName)
+            const exactLocationName = await reverseGeocodeCoordinates(latitude, longitude)
+            setCurrentLocation(exactLocationName)
+            sendLocationUpdate(latitude, longitude, exactLocationName)
           },
-          () => {
+          (err) => {
+            console.warn('Hardware Geolocation warning, switching to IP lookup:', err.message)
             fallbackIpTracking()
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         )
       } else {
         fallbackIpTracking()
       }
     }
 
-    const fallbackIpTracking = async () => {
-      try {
-        const res = await fetch('https://ipapi.co/json/')
-        if (!res.ok) return
-        const data = await res.json()
-        const latitude = data.latitude
-        const longitude = data.longitude
-        if (!latitude || !longitude) return
-
-        const parts = [data.city, data.region].filter(Boolean)
-        const locName = parts.length > 0 ? parts.join(', ') : `${latitude}, ${longitude}`
-
-        setCoords({ latitude, longitude })
-        setCurrentLocation(locName)
-        sendLocationUpdate(latitude, longitude, locName)
-      } catch (err) {
-        console.warn('Location tracking error:', err)
-      }
-    }
-
+    // Immediately trigger location acquisition upon login/mount
     trackLocationHighAccuracy()
 
-    const intervalId = setInterval(trackLocationHighAccuracy, 60 * 1000)
+    // 30-second pulse for real-time multi-location updates
+    const intervalId = setInterval(trackLocationHighAccuracy, 30 * 1000)
     return () => clearInterval(intervalId)
   }, [user])
 
