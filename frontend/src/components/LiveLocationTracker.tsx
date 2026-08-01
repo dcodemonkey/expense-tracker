@@ -23,7 +23,6 @@ export default function LiveLocationTracker() {
     }
 
     const reverseGeocodeCoordinates = async (latitude: number, longitude: number): Promise<string> => {
-      // 1. Try OpenStreetMap Nominatim for exact street, road, colony & locality
       try {
         const nomRes = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
@@ -42,10 +41,9 @@ export default function LiveLocationTracker() {
           }
         }
       } catch {
-        // Continue to fallback
+        // Continue
       }
 
-      // 2. Try BigDataCloud
       try {
         const revRes = await fetch(
           `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
@@ -58,15 +56,34 @@ export default function LiveLocationTracker() {
           }
         }
       } catch {
-        // Continue to fallback
+        // Continue
       }
 
       return `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
     }
 
+    const checkSavedCustomLocation = (): boolean => {
+      const savedCustom = localStorage.getItem('user_custom_location')
+      if (savedCustom) {
+        try {
+          const parsed = JSON.parse(savedCustom)
+          if (parsed.lat && parsed.lon && parsed.name) {
+            setCoords({ latitude: parsed.lat, longitude: parsed.lon })
+            setCurrentLocation(parsed.name)
+            sendLocationUpdate(parsed.lat, parsed.lon, parsed.name)
+            return true
+          }
+        } catch {
+          // Ignored
+        }
+      }
+      return false
+    }
+
     const fallbackIpTracking = async () => {
+      if (checkSavedCustomLocation()) return
+
       try {
-        // Try ipwho.is for fast, accurate IP-based latitude & longitude
         const res = await fetch('https://ipwho.is/')
         if (res.ok) {
           const data = await res.json()
@@ -83,7 +100,7 @@ export default function LiveLocationTracker() {
           }
         }
       } catch {
-        // Fallback to ipapi.co
+        // Fallback
       }
 
       try {
@@ -107,8 +124,9 @@ export default function LiveLocationTracker() {
     }
 
     const trackLocationHighAccuracy = () => {
+      if (checkSavedCustomLocation()) return
+
       if ('geolocation' in navigator) {
-        // maximumAge: 0 forces the browser/device to acquire a fresh 0-second real-time GPS fix from hardware sensors
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
             const { latitude, longitude } = pos.coords
@@ -129,10 +147,7 @@ export default function LiveLocationTracker() {
       }
     }
 
-    // Automatically fetch location on mount/login
     trackLocationHighAccuracy()
-
-    // Automatically background-fetch location update every 60 seconds
     const intervalId = setInterval(trackLocationHighAccuracy, 60 * 1000)
     return () => clearInterval(intervalId)
   }, [user])

@@ -1,0 +1,4 @@
+- [x] Redesign UI to match Web Experience
+- [x] Fix HTTP 422 Login Error (Revert to `email`)
+- [x] UI Polish & Text Visibility
+- [x] Verify build and deploy

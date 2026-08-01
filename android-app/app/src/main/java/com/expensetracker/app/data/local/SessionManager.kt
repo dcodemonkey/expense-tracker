@@ -3,12 +3,17 @@ package com.expensetracker.app.data.local
 import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class SessionManager @Inject constructor(@ApplicationContext context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+
+    private val _logoutEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val logoutEvents = _logoutEvents.asSharedFlow()
 
     companion object {
         private const val PREF_NAME = "expense_tracker_prefs"
@@ -43,6 +48,7 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
 
     fun clearSession() {
         prefs.edit().clear().apply()
+        _logoutEvents.tryEmit(Unit)
     }
 
     fun isLoggedIn(): Boolean {

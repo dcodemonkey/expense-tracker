@@ -3,6 +3,9 @@ package com.expensetracker.app.worker
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.expensetracker.app.data.local.AppDatabase
 import com.expensetracker.app.data.local.SessionManager
@@ -87,5 +90,16 @@ class SyncWorker @AssistedInject constructor(
     private fun getFcmToken(context: Context): String? {
         return context.getSharedPreferences("device_prefs", Context.MODE_PRIVATE)
             .getString("fcm_token", null)
+    }
+
+    companion object {
+        fun enqueueSync(context: Context) {
+            val workRequest = OneTimeWorkRequest.Builder(SyncWorker::class.java).build()
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "sync_work",
+                ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
+        }
     }
 }

@@ -1,5 +1,27 @@
-- [x] Add `--add-opens` flags to `gradle.properties`
-- [x] Migrate to KSP to resolve `IllegalAccessError`
-- [x] Fix compilation errors in 10+ files (imports, SQL, Hilt, Syntax)
-- [x] Verify fix by running Gradle task
-- [x] Create walkthrough
+# Task: Web UI Parity for Android [COMPLETE]
+
+- [x] **Step 1: Data Layer & API Improvements**
+    - [x] Update `ApiService.kt` with new endpoints (Seed, CRUD, Auth)
+    - [x] Update `ApiRepository.kt` to expose new functionality
+- [x] **Step 2: Design System & Theming**
+    - [x] Update `Color.kt` with Web palette (Flame, Mint, SurfaceDark)
+    - [x] Refine `Theme.kt` for high-fidelity dark mode
+- [x] **Step 3: Advanced Dashboard V2**
+    - [x] Implement `AreaChart` (Sparkline) component
+    - [x] Build "Net this month" Hero Card
+    - [x] Add StatCards and Budget Alert sections
+- [x] **Step 4: Budgets Management Screen**
+    - [x] Create `BudgetsViewModel.kt`
+    - [x] Implement `BudgetsScreen.kt` with progress tracking
+- [x] **Step 5: Insights & Analytics Screen**
+    - [x] Create `InsightsViewModel.kt`
+    - [x] Implement tabbed `InsightsScreen.kt` (Trends, Categories, Merchants)
+- [x] **Step 6: Transaction CRUD Enhancement**
+    - [x] Implement `AddTransactionScreen.kt`
+    - [x] Implement `TransactionDetailScreen.kt`
+- [x] **Step 7: Auth Flow Completion**
+    - [x] Add `RegisterScreen.kt`
+    - [x] Add `ForgotPasswordScreen.kt`
+- [x] **Step 8: Final Navigation & Integration**
+    - [x] Update `AppNavHost.kt` with all new routes
+    - [x] Verify build and performance

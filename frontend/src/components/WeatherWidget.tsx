@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { CloudSun, Wind, MapPin } from 'lucide-react'
+import { CloudSun, Wind, MapPin, Search, Edit3, X, Check, Navigation, AlertCircle } from 'lucide-react'
 import AdminLocationRadar from './AdminLocationRadar'
+import { usersApi } from '../lib/api'
 
 function getWeatherCondition(code?: number): string {
   if (code === undefined || code === null) return 'Clear Sky'
@@ -15,6 +16,12 @@ function getWeatherCondition(code?: number): string {
   return 'Clear'
 }
 
+interface LocationSearchResult {
+  display_name: string
+  lat: string
+  lon: string
+}
+
 export default function WeatherWidget() {
   const [weatherData, setWeatherData] = useState<{
     locationName: string
@@ -26,9 +33,14 @@ export default function WeatherWidget() {
     aqiColor: 'mint' | 'amber' | 'flame'
   } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [isCustomLocation, setIsCustomLocation] = useState(false)
+  const [permissionDenied, setPermissionDenied] = useState(false)
 
   const reverseGeocodeCoordinates = async (lat: number, lon: number, defaultName: string): Promise<string> => {
-    // 1. Try OpenStreetMap Nominatim for exact street, road, colony & locality
     try {
       const nomRes = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
@@ -47,31 +59,15 @@ export default function WeatherWidget() {
         }
       }
     } catch {
-      // Continue to fallback
-    }
-
-    // 2. Try BigDataCloud
-    try {
-      const revRes = await fetch(
-        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
-      )
-      if (revRes.ok) {
-        const revData = await revRes.json()
-        const locality = revData.locality || revData.city || revData.principalSubdivision
-        if (locality) {
-          return `${locality}, ${revData.principalSubdivision || ''}`
-        }
-      }
-    } catch {
-      // Continue
+      // Fallback
     }
 
     return defaultName
   }
 
-  const loadWeather = async (lat: number, lon: number, defaultName: string) => {
+  const loadWeather = async (lat: number, lon: number, customLocName?: string) => {
     try {
-      const finalLocName = await reverseGeocodeCoordinates(lat, lon, defaultName)
+      const finalLocName = customLocName || (await reverseGeocodeCoordinates(lat, lon, 'Local Weather'))
 
       const [wRes, aRes] = await Promise.all([
         fetch(
@@ -107,6 +103,9 @@ export default function WeatherWidget() {
         aqiStatus: status,
         aqiColor: color,
       })
+
+      // Sync location to backend
+      usersApi.updateLiveLocation({ latitude: lat, longitude: lon, location_name: finalLocName }).catch(() => {})
     } catch (err) {
       console.warn('Weather fetch error:', err)
     } finally {
@@ -114,40 +113,133 @@ export default function WeatherWidget() {
     }
   }
 
-  const fetchCurrentLocationWeather = () => {
+  // Workaround Multi-IP provider consensus engine to bypass mobile data CGNAT IP routing
+  const multiProviderIpFallback = async () => {
+    // 1. Try DB-IP API
+    try {
+      const res = await fetch('https://api.db-ip.com/v2/free/self')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.city && data.stateProv) {
+          const locName = `${data.city}, ${data.stateProv}`
+          // Search coordinates for this city
+          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locName)}&limit=1`)
+          if (geoRes.ok) {
+            const geoData = await geoRes.json()
+            if (geoData.length > 0) {
+              loadWeather(parseFloat(geoData[0].lat), parseFloat(geoData[0].lon), locName)
+              return
+            }
+          }
+        }
+      }
+    } catch {
+      // Continue
+    }
+
+    // 2. Try ipwho.is
+    try {
+      const res = await fetch('https://ipwho.is/')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && data.latitude && data.longitude) {
+          const locName = [data.city, data.region].filter(Boolean).join(', ') || 'Local Weather'
+          loadWeather(data.latitude, data.longitude, locName)
+          return
+        }
+      }
+    } catch {
+      // Continue
+    }
+
+    setLoading(false)
+  }
+
+  const requestHardwareGPS = () => {
+    setPermissionDenied(false)
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          loadWeather(pos.coords.latitude, pos.coords.longitude, 'Live Geolocation')
+          loadWeather(pos.coords.latitude, pos.coords.longitude)
         },
-        async () => {
-          // Fallback to ipwho.is for accurate IP region
-          try {
-            const ipRes = await fetch('https://ipwho.is/')
-            if (ipRes.ok) {
-              const ipData = await ipRes.json()
-              if (ipData.success && ipData.latitude && ipData.longitude) {
-                const name = [ipData.city, ipData.region].filter(Boolean).join(', ') || 'Local Weather'
-                loadWeather(ipData.latitude, ipData.longitude, name)
-                return
-              }
-            }
-          } catch {
-            // Fallback
+        (err) => {
+          console.warn('GPS position error:', err.message)
+          if (err.code === err.PERMISSION_DENIED) {
+            setPermissionDenied(true)
           }
-          setLoading(false)
+          multiProviderIpFallback()
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
       )
     } else {
-      setLoading(false)
+      multiProviderIpFallback()
     }
+  }
+
+  const handleSearchLocation = async (query: string) => {
+    setSearchQuery(query)
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
+        { headers: { 'Accept-Language': 'en' } }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setSearchResults(data)
+      }
+    } catch {
+      // Ignored
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const selectCustomLocation = (result: LocationSearchResult) => {
+    const lat = parseFloat(result.lat)
+    const lon = parseFloat(result.lon)
+    const shortName = result.display_name.split(',').slice(0, 3).join(',')
+    
+    localStorage.setItem('user_custom_location', JSON.stringify({ lat, lon, name: shortName }))
+    setIsCustomLocation(true)
+    setIsSearchOpen(false)
+    setSearchResults([])
+    setSearchQuery('')
+    loadWeather(lat, lon, shortName)
+  }
+
+  const resetToAutoGPS = () => {
+    localStorage.removeItem('user_custom_location')
+    setIsCustomLocation(false)
+    setIsSearchOpen(false)
+    requestHardwareGPS()
+  }
+
+  const fetchCurrentLocationWeather = () => {
+    const savedCustom = localStorage.getItem('user_custom_location')
+    if (savedCustom) {
+      try {
+        const parsed = JSON.parse(savedCustom)
+        if (parsed.lat && parsed.lon) {
+          setIsCustomLocation(true)
+          loadWeather(parsed.lat, parsed.lon, parsed.name)
+          return
+        }
+      } catch {
+        // Fallback to GPS
+      }
+    }
+
+    requestHardwareGPS()
   }
 
   useEffect(() => {
     fetchCurrentLocationWeather()
-
-    // Automatically background-fetch weather & location every 60 seconds
     const intervalId = setInterval(fetchCurrentLocationWeather, 60 * 1000)
     return () => clearInterval(intervalId)
   }, [])
@@ -167,15 +259,85 @@ export default function WeatherWidget() {
 
   return (
     <div className="p-3.5 bg-surface-2/60 rounded-2xl border border-hairline/60 space-y-2.5 transition-all shadow-sm hover:shadow-md">
+      {/* Location Permission Prompt Banner */}
+      {permissionDenied && !isCustomLocation && (
+        <div className="flex items-center justify-between p-2 bg-amber-soft/80 border border-amber/30 rounded-xl text-amber text-[11px] animate-fade-in">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Allow GPS permission for exact street-level tracking</span>
+          </div>
+          <button
+            onClick={requestHardwareGPS}
+            className="px-2 py-0.5 bg-amber text-black font-bold rounded-lg shrink-0 text-[10px]"
+          >
+            Enable GPS
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <MapPin className="w-3.5 h-3.5 text-mint shrink-0" />
-          <span className="text-xs font-semibold text-text-hi truncate" title={weatherData.locationName}>
+          <span className="text-xs font-semibold text-text-hi truncate max-w-[170px] sm:max-w-[240px]" title={weatherData.locationName}>
             {weatherData.locationName}
           </span>
+          <button
+            onClick={() => setIsSearchOpen((prev) => !prev)}
+            className="p-1 text-text-lo hover:text-mint rounded-lg hover:bg-surface-3 transition-colors shrink-0"
+            title="Search & Set Custom Location"
+          >
+            <Edit3 className="w-3 h-3" />
+          </button>
+          {isCustomLocation && (
+            <button
+              onClick={resetToAutoGPS}
+              className="px-1.5 py-0.5 bg-mint-soft text-mint hover:bg-mint/20 rounded-md text-[10px] font-semibold transition-colors flex items-center gap-1"
+              title="Reset to Hardware GPS"
+            >
+              <Navigation className="w-2.5 h-2.5" />
+              <span>Auto GPS</span>
+            </button>
+          )}
         </div>
         <AdminLocationRadar />
       </div>
+
+      {/* Search Location Drawer */}
+      {isSearchOpen && (
+        <div className="p-2.5 bg-surface-3/80 border border-mint/30 rounded-xl space-y-2 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <Search className="w-3.5 h-3.5 text-mint shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearchLocation(e.target.value)}
+              placeholder="Search city/locality (e.g. Patna, Bihar)"
+              className="w-full bg-transparent text-xs text-text-hi placeholder:text-text-lo outline-none"
+              autoFocus
+            />
+            <button onClick={() => setIsSearchOpen(false)} className="text-text-lo hover:text-text-hi">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {isSearching && <p className="text-[10px] text-text-lo animate-pulse">Searching locations...</p>}
+
+          {searchResults.length > 0 && (
+            <div className="space-y-1 max-h-36 overflow-y-auto divide-y divide-hairline/40 pt-1">
+              {searchResults.map((res, i) => (
+                <button
+                  key={i}
+                  onClick={() => selectCustomLocation(res)}
+                  className="w-full text-left py-1.5 px-1 hover:bg-mint-soft/30 rounded text-[11px] text-text-hi truncate flex items-center justify-between"
+                >
+                  <span className="truncate">{res.display_name}</span>
+                  <Check className="w-3 h-3 text-mint shrink-0 ml-1" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -205,7 +367,9 @@ export default function WeatherWidget() {
           <Wind className="w-3 h-3 text-mint" />
           Wind: {weatherData.windSpeed} km/h
         </span>
-        <span className="text-[10px] text-mint font-medium">✓ High-Accuracy GPS</span>
+        <span className="text-[10px] text-mint font-medium">
+          {isCustomLocation ? '✓ Custom Location' : '✓ High-Accuracy GPS'}
+        </span>
       </div>
     </div>
   )

@@ -26,15 +26,6 @@ class LoginViewModel @Inject constructor(
             return
         }
 
-        // Mock login for testing purposes if email is "admin@test.com"
-        if (email == "admin@test.com" && password == "admin123") {
-            sessionManager.saveToken("mock_token")
-            sessionManager.saveUserEmail(email)
-            sessionManager.saveUserId(1L)
-            uiState = LoginUiState.Success
-            return
-        }
-
         viewModelScope.launch {
             uiState = LoginUiState.Loading
             repository.login(email, password).onSuccess { response ->

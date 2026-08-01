@@ -6,8 +6,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.expensetracker.app.data.model.DashboardSummary
+import com.expensetracker.app.data.model.SpendingTrend
 import com.expensetracker.app.data.repository.ApiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,10 +28,20 @@ class DashboardViewModel @Inject constructor(
     fun loadDashboard() {
         viewModelScope.launch {
             uiState = DashboardUiState.Loading
-            repository.getDashboard().onSuccess { summary ->
-                uiState = DashboardUiState.Success(summary)
-            }.onFailure { exception ->
-                uiState = DashboardUiState.Error(exception.message ?: "Failed to load dashboard")
+            
+            val summaryDeferred = async { repository.getDashboard() }
+            val trendDeferred = async { repository.getSpendingTrend(30) }
+
+            val summaryResult = summaryDeferred.await()
+            val trendResult = trendDeferred.await()
+
+            if (summaryResult.isSuccess) {
+                uiState = DashboardUiState.Success(
+                    summary = summaryResult.getOrNull()!!,
+                    trend = trendResult.getOrNull()
+                )
+            } else {
+                uiState = DashboardUiState.Error(summaryResult.exceptionOrNull()?.message ?: "Failed to load dashboard")
             }
         }
     }
@@ -37,6 +49,9 @@ class DashboardViewModel @Inject constructor(
 
 sealed class DashboardUiState {
     object Loading : DashboardUiState()
-    data class Success(val summary: DashboardSummary) : DashboardUiState()
+    data class Success(
+        val summary: DashboardSummary,
+        val trend: SpendingTrend? = null
+    ) : DashboardUiState()
     data class Error(val message: String) : DashboardUiState()
 }

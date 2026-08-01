@@ -1,4 +1,253 @@
-# Expense Tracker - Full Stack Application
+# Expense Tracker – Full‑Stack Application
+
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)  
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+---
+
+## 🎯 Overview
+
+**Expense Tracker** is a production‑ready, multi‑platform expense‑tracking suite that consists of:
+
+- **Web Dashboard** – React 18 + TypeScript UI built with Vite and Tailwind CSS.
+- **Backend API** – FastAPI (Python 3.11) with async SQLAlchemy, JWT auth and a PostgreSQL database.
+- **Android App** – Kotlin + Jetpack Compose client that parses SMS/Email transactions automatically and syncs in real‑time.
+
+The app provides automatic transaction extraction, smart categorisation, budgeting, insights, and real‑time sync across devices.
+
+---
+
+## 📸 Screenshots
+
+| Dashboard | Mobile App |
+|----------|------------|
+| ![Dashboard](/C:/Users/indev/.gemini/antigravity-ide/brain/f93a761e-9c4e-4b74-99c4-7a7e6906005d/media__1785152401309.png) | ![Android Home](/C:/Users/indev/.gemini/antigravity-ide/brain/f93a761e-9c4e-4b74-99c4-7a7e6906005d/media__1785153318971.png) |
+
+---
+
+## ✨ Key Features
+
+- **Automatic Transaction Extraction** – SMS & email parsing for Indian banks and UPI apps.
+- **Real‑time Sync** – WorkManager on Android pushes data to the FastAPI backend; the web client receives updates via TanStack Query.
+- **Smart Categorisation** – ML‑driven merchant classification with customizable categories.
+- **Budget Management** – Set per‑category budgets and receive push alerts when limits are exceeded.
+- **Insights & Analytics** – Interactive charts (Recharts) showing trends, merchant analysis and spending breakdowns.
+- **Location‑aware Weather Widget** – Uses the browser Geolocation API with a high‑accuracy fallback and IP‑consensus engine.
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph LR
+    subgraph Frontend
+        FE[React Web App]
+    end
+    subgraph Backend
+        BE[FastAPI]
+        DB[(PostgreSQL)]
+        Cache[(Redis)]
+    end
+    subgraph Android
+        AND[Jetpack Compose]
+        Room[Room DB]
+        WM[WorkManager]
+    end
+    FE --> BE
+    AND --> BE
+    BE --> DB
+    BE --> Cache
+    AND --> WM --> BE
+    AND --> Room
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Backend** | FastAPI, SQLAlchemy 2.0, PostgreSQL, Alembic, Pydantic, JWT, Passlib |
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query, Recharts |
+| **Android** | Kotlin, Jetpack Compose, Hilt, Room, WorkManager, Retrofit, Coroutines |
+| **DevOps** | Docker Compose, Railway, GitHub Actions |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Docker & Docker‑Compose** (for production containers).
+- **Node.js 18+** and **npm**.
+- **Python 3.11+** (for the backend).
+- **Android Studio** (for Android development).
+
+### One‑Click Launcher (recommended)
+
+From the repository root (`d:\Projects\expense-tracker`):
+
+```powershell
+# Windows PowerShell
+.\start-all.ps1
+```
+
+Or on Unix‑like shells:
+
+```bash
+./start-all.sh
+```
+
+### Run All Services Locally (Manual)
+If you prefer to start each component in separate terminals, follow these steps:
+1. **Backend** – Open a terminal, navigate to `backend`, activate the virtual environment and run:
+   ```bash
+   cd backend
+   source venv/Scripts/activate   # Windows
+   # source venv/bin/activate      # macOS/Linux
+   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+2. **Frontend** – Open another terminal, navigate to `frontend`, install dependencies and start the dev server:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev   # http://localhost:5173
+   ```
+
+3. **Android** – Open the `android-app` folder in Android Studio, sync Gradle and run the `app` module on an emulator or physical device.
+
+4. **Admin Panel (optional)** – If you need the admin UI, run:
+   ```bash
+   cd admin
+   pip install -r requirements.txt
+   streamlit run app.py
+   ```
+
+#### Backend
+
+```bash
+cd backend
+python -m venv venv
+source venv/Scripts/activate   # Windows
+# source venv/bin/activate      # macOS/Linux
+pip install .
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev   # Vite dev server (http://localhost:5173)
+```
+
+#### Android
+
+Open `android-app` in Android Studio, sync Gradle and run the `app` module on an emulator or device.
+
+---
+
+## 📋 Environment Variables
+
+### Backend (`backend/.env`)
+
+```env
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/expense_tracker
+SECRET_KEY=super-secret-key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=11520   # 8 days
+FRONTEND_URL=http://localhost:5173
+```
+
+### Frontend (`frontend/.env.production`)
+
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+---
+
+## 📚 API Reference
+
+The backend automatically generates an OpenAPI spec at `http://localhost:8000/docs`.
+
+Key groups include:
+
+- **Authentication** – `/auth/register`, `/auth/login`, `/auth/me`
+- **Categories** – CRUD endpoints under `/categories`
+- **Transactions** – CRUD and summary under `/transactions`
+- **Budgets** – CRUD under `/budgets`
+- **Insights** – Dashboard, trends, merchant analysis, etc.
+- **Sync** – Android device registration and message sync (`/sync`)
+
+---
+
+## 📂 Project Structure
+
+```
+expense-tracker/
+├─ backend/                 # FastAPI server
+│  ├─ app/
+│  │   ├─ api/v1/endpoints/   # Route handlers
+│  │   ├─ core/                # Config, security, DB
+│  │   ├─ models/              # SQLAlchemy models
+│  │   ├─ schemas/             # Pydantic schemas
+│  │   └─ services/            # Business logic (parser, insights)
+│  └─ pyproject.toml
+├─ frontend/                # React + Vite
+│  ├─ src/
+│  │   ├─ components/          # UI widgets (WeatherWidget, LiveLocationTracker, …)
+│  │   ├─ pages/               # Dashboard, Budgets, Settings, …
+│  │   ├─ hooks/               # Custom React hooks
+│  │   ├─ lib/                 # API client utilities
+│  │   └─ types/               # TypeScript definitions
+│  └─ vite.config.ts
+├─ android-app/              # Kotlin Compose app
+│  └─ app/src/main/java/com/expensetracker/app/
+│      ├─ data/      # Repository, Room DAO
+│      ├─ di/        # Hilt modules
+│      ├─ ui/        # Compose UI screens
+│      ├─ service/   # SMS receiver, FCM service
+│      └─ worker/    # WorkManager workers
+└─ admin/                    # Optional admin panel (Streamlit)
+```
+
+---
+
+## ✅ Testing
+
+```bash
+# Backend tests
+cd backend && pytest
+
+# Frontend tests
+cd frontend && npm run test
+
+# Android unit tests
+./gradlew test
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repo.
+2. Create a feature branch (`git checkout -b feat/awesome-feature`).
+3. Install dependencies and run the relevant tests.
+4. Ensure code style passes (`npm run lint` / `flake8`).
+5. Open a Pull Request describing the change.
+
+---
+
+## 📄 License
+
+MIT License – see the `LICENSE` file for details.
+
+---
+
+*Happy coding! 🚀*
 
 A comprehensive expense tracking application with web (React + FastAPI) and Android (Kotlin + Compose) clients that automatically extracts transactions from SMS and email messages.
 

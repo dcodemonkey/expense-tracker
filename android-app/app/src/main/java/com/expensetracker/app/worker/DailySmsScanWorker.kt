@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.expensetracker.app.data.local.AppDatabase
+import com.expensetracker.app.data.model.toEntity
 import com.expensetracker.app.data.parser.SmsParser
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -30,7 +31,7 @@ class DailySmsScanWorker(
         val selectionArgs = arrayOf(last24HoursMillis.toString())
         val sortOrder = "date DESC"
 
-        val db = AppDatabase.getDatabase(context)
+        val db = AppDatabase.getInstance(context)
         val parsedDao = db.parsedMessageDao()
 
         var scannedCount = 0
@@ -71,7 +72,7 @@ class DailySmsScanWorker(
 
                         val parsed = SmsParser.parseSms(body, address, receivedAt)
                         if (parsed != null) {
-                            parsedDao.insert(parsed)
+                            parsedDao.insert(parsed.toEntity())
                             addedCount++
                         }
                     }

@@ -33,7 +33,7 @@ class ApiRepository @Inject constructor(
 
     suspend fun login(email: String, password: String): Result<AuthResponse> {
         return try {
-            val response = apiService.login(email, password)
+            val response = apiService.login(LoginRequest(email, password))
             if (response.success) Result.success(response.data!!) else Result.failure(Exception(response.error ?: "Login failed"))
         } catch (e: Exception) {
             Result.failure(e)
@@ -122,10 +122,55 @@ class ApiRepository @Inject constructor(
         }
     }
 
+    suspend fun updateTransaction(id: Long, amount: Double? = null, type: String? = null, categoryId: Long? = null, description: String? = null, merchantName: String? = null, transactionDate: String? = null, status: String? = null): Result<Transaction> {
+        return try {
+            val response = apiService.updateTransaction(id, UpdateTransactionRequest(amount, type = type, categoryId = categoryId, description = description, merchantName = merchantName, transactionDate = transactionDate, status = status))
+            if (response.success) Result.success(response.data!!) else Result.failure(Exception(response.error ?: "Failed to update transaction"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteTransaction(id: Long): Result<Unit> {
+        return try {
+            val response = apiService.deleteTransaction(id)
+            if (response.success) Result.success(Unit) else Result.failure(Exception(response.error ?: "Failed to delete transaction"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getBudgets(): Result<List<BudgetWithProgress>> {
         return try {
             val response = apiService.getBudgets()
             if (response.success) Result.success(response.data!!) else Result.failure(Exception(response.error ?: "Failed to get budgets"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createBudget(name: String, amount: Double, period: String, categoryId: Long? = null, startDate: String, endDate: String? = null): Result<Budget> {
+        return try {
+            val response = apiService.createBudget(CreateBudgetRequest(name, amount, period, categoryId, startDate, endDate))
+            if (response.success) Result.success(response.data!!) else Result.failure(Exception(response.error ?: "Failed to create budget"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateBudget(id: Long, name: String? = null, amount: Double? = null, period: String? = null, categoryId: Long? = null, startDate: String? = null, endDate: String? = null, isActive: Boolean? = null): Result<Budget> {
+        return try {
+            val response = apiService.updateBudget(id, UpdateBudgetRequest(name, amount, period, categoryId, startDate, endDate, isActive))
+            if (response.success) Result.success(response.data!!) else Result.failure(Exception(response.error ?: "Failed to update budget"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteBudget(id: Long): Result<Unit> {
+        return try {
+            val response = apiService.deleteBudget(id)
+            if (response.success) Result.success(Unit) else Result.failure(Exception(response.error ?: "Failed to delete budget"))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -144,6 +189,24 @@ class ApiRepository @Inject constructor(
         return try {
             val response = apiService.getSpendingTrend(days)
             if (response.success) Result.success(response.data!!) else Result.failure(Exception(response.error ?: "Failed to get trend"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun seedData(): Result<SeedResponse> {
+        return try {
+            val response = apiService.seedData()
+            if (response.success) Result.success(response.data!!) else Result.failure(Exception(response.error ?: "Failed to seed data"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun forgotPassword(email: String): Result<String> {
+        return try {
+            val response = apiService.forgotPassword(ForgotPasswordRequest(email))
+            if (response.success) Result.success(response.data?.message ?: "Check your email") else Result.failure(Exception(response.error ?: "Failed to send reset email"))
         } catch (e: Exception) {
             Result.failure(e)
         }

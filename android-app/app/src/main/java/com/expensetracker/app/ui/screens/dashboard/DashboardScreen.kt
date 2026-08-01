@@ -7,28 +7,30 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.expensetracker.app.data.model.DashboardSummary
-import com.expensetracker.app.data.model.Transaction
-import com.expensetracker.app.data.model.TransactionType
+import com.expensetracker.app.ui.components.HeroCard
+import com.expensetracker.app.ui.components.StatCard
 import com.expensetracker.app.ui.components.TransactionItem
+import com.expensetracker.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onNavigateToTransactions: () -> Unit,
     onNavigateToCategories: () -> Unit,
+    onMenuClick: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState = viewModel.uiState
@@ -36,32 +38,43 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Dashboard") },
+                title = { 
+                    Column {
+                        Text("Good afternoon,", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                        Text("Developer", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextDark)
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = TextDark)
+                    }
+                },
                 actions = {
                     IconButton(onClick = { viewModel.loadDashboard() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = TextDark)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         when (uiState) {
             is DashboardUiState.Loading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Mint)
                 }
             }
             is DashboardUiState.Success -> {
                 DashboardContent(
-                    summary = uiState.summary,
+                    state = uiState,
                     onViewAllTransactions = onNavigateToTransactions,
-                    onManageCategories = onNavigateToCategories,
                     modifier = Modifier.padding(padding)
                 )
             }
             is DashboardUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = MaterialTheme.colorScheme.error)
+                    Text(text = uiState.message, color = Flame)
                 }
             }
         }
@@ -70,20 +83,51 @@ fun DashboardScreen(
 
 @Composable
 fun DashboardContent(
-    summary: DashboardSummary,
+    state: DashboardUiState.Success,
     onViewAllTransactions: () -> Unit,
-    onManageCategories: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val summary = state.summary
+    val trendData = state.trend?.daily?.map { it.amount } ?: emptyList()
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         item {
-            SummaryCards(summary)
+            HeroCard(
+                netAmount = summary.thisMonthNet,
+                income = summary.thisMonthIncome,
+                expenses = summary.thisMonthExpenses,
+                trendData = trendData
+            )
         }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatCard(
+                    label = "Today's spend",
+                    value = "₹${summary.todayExpenses}",
+                    icon = Icons.Default.CreditCard,
+                    color = Flame,
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    label = "Today's income",
+                    value = "₹${summary.todayIncome}",
+                    icon = Icons.Default.Wallet,
+                    color = Mint,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -91,88 +135,83 @@ fun DashboardContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Recent Transactions",
+                    text = "Recent activity",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
                 )
                 TextButton(onClick = onViewAllTransactions) {
-                    Text("View All")
+                    Text("All", color = Mint)
                 }
             }
         }
-        items(summary.recentTransactions) { transaction ->
-            TransactionItem(transaction)
-        }
-        item {
-            Button(
-                onClick = onManageCategories,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-            ) {
-                Text("Manage Categories")
-            }
-        }
-    }
-}
 
-@Composable
-fun SummaryCards(summary: DashboardSummary) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        SummaryCard(
-            title = "Income",
-            amount = "₹${summary.thisMonthIncome}",
-            color = Color(0xFF4CAF50),
-            icon = Icons.Default.ArrowUpward,
-            modifier = Modifier.weight(1f)
-        )
-        SummaryCard(
-            title = "Expense",
-            amount = "₹${summary.thisMonthExpenses}",
-            color = Color(0xFFF44336),
-            icon = Icons.Default.ArrowDownward,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun SummaryCard(
-    title: String,
-    amount: String,
-    color: Color,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        if (summary.recentTransactions.isEmpty()) {
+            item {
                 Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(color.copy(alpha = 0.2f)),
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+                    Text("Nothing here yet", color = TextMuted)
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = title, style = MaterialTheme.typography.labelMedium, color = color)
+            }
+        } else {
+            items(summary.recentTransactions.take(5)) { transaction ->
+                TransactionItem(transaction)
+            }
+        }
+
+        if (summary.budgetAlerts.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Budget alerts",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Flame,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            items(summary.budgetAlerts) { budget ->
+                BudgetAlertItem(budget)
+            }
+        }
+    }
+}
+
+@Composable
+fun BudgetAlertItem(budget: com.expensetracker.app.data.model.BudgetWithProgress) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(Flame.copy(alpha = 0.3f)))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = budget.name, fontWeight = FontWeight.Bold, color = TextDark)
+                Text(
+                    text = "${budget.progressPercentage.toInt()}%",
+                    color = Flame,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
             }
             Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = (budget.progressPercentage / 100f).toFloat().coerceIn(0f, 1f),
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+                color = Flame,
+                trackColor = Color.Black.copy(alpha = 0.05f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = amount,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = color
+                text = "₹${budget.spentAmount} of ₹${budget.amount}",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted
             )
         }
     }
 }
-

@@ -8,9 +8,8 @@ interface ApiService {
     @POST("auth/register")
     suspend fun register(@Body request: RegisterRequest): ApiResponse<AuthResponse>
 
-    @FormUrlEncoded
     @POST("auth/login")
-    suspend fun login(@Field("username") email: String, @Field("password") password: String): ApiResponse<AuthResponse>
+    suspend fun login(@Body request: LoginRequest): ApiResponse<AuthResponse>
 
     @GET("auth/me")
     suspend fun getMe(): ApiResponse<UserResponse>
@@ -99,6 +98,15 @@ interface ApiService {
         @Query("end_date") endDate: String? = null
     ): ApiResponse<List<DailyInsight>>
 
+    @POST("auth/seed")
+    suspend fun seedData(): ApiResponse<SeedResponse>
+
+    @POST("auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): ApiResponse<MessageResponse>
+
+    @POST("auth/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): ApiResponse<MessageResponse>
+
     @POST("sync/sync")
     suspend fun syncDevice(@Body request: SyncRequest): ApiResponse<SyncResponse>
 
@@ -131,9 +139,35 @@ data class RegisterRequest(
     @SerializedName("phone_number") val phoneNumber: String? = null
 )
 
+data class LoginRequest(
+    @SerializedName("email") val email: String,
+    @SerializedName("password") val password: String
+)
+
 data class AuthResponse(
     @SerializedName("access_token") val accessToken: String,
     @SerializedName("token_type") val tokenType: String = "bearer"
+)
+
+data class SeedResponse(
+    @SerializedName("message") val message: String,
+    @SerializedName("seeded") val seeded: Boolean,
+    @SerializedName("transactions") val transactions: Int,
+    @SerializedName("categories") val categories: Int,
+    @SerializedName("budgets") val budgets: Int
+)
+
+data class ForgotPasswordRequest(
+    @SerializedName("email") val email: String
+)
+
+data class ResetPasswordRequest(
+    @SerializedName("token") val token: String,
+    @SerializedName("new_password") val newPassword: String
+)
+
+data class MessageResponse(
+    @SerializedName("message") val message: String
 )
 
 data class UserResponse(

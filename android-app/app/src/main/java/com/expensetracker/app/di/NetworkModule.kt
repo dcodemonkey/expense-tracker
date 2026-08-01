@@ -18,7 +18,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://expense-tracker-decodemonkey.vercel.app/api/v1/"
+    private const val BASE_URL = "https://expense-tracker-eight-phi-16.vercel.app/api/v1/"
 
     @Provides
     @Singleton
@@ -41,7 +41,13 @@ object NetworkModule {
                 sessionManager.getToken()?.let {
                     request.addHeader("Authorization", "Bearer $it")
                 }
-                chain.proceed(request.build())
+                val response = chain.proceed(request.build())
+                
+                if (response.code == 401) {
+                    sessionManager.clearSession()
+                }
+                
+                response
             }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
