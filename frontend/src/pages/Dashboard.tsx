@@ -20,6 +20,7 @@ import { useAuth } from '../hooks/useAuth'
 import { insightsApi } from '../lib/api'
 import { DashboardSummary, SpendingTrend } from '../types'
 import { formatCurrency, formatDate, cn } from '../lib/utils'
+import WeatherWidget from '../components/WeatherWidget'
 import {
   Card,
   CardBody,
@@ -86,6 +87,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Weather & Live GPS Location Card */}
+      <WeatherWidget />
+
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-sm text-text-lo">{greeting()},</p>
