@@ -122,7 +122,7 @@ export default function LiveLocationTracker() {
             console.warn('Hardware Geolocation warning, switching to IP lookup:', err.message)
             fallbackIpTracking()
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         )
       } else {
         fallbackIpTracking()
