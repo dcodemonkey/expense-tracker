@@ -1,5 +1,11 @@
-- [x] Debug Login HTTP 422
-    - [x] Revert `LoginRequest` field to `email` in `ApiService.kt`
-    - [x] Update `ApiRepository.kt` mapping
-    - [x] Enhance error logging in `NetworkModule.kt`
-- [x] Verify build and deploy
+- [/] Advanced Feature Completion & Sync
+    - [ ] Backend: Update `User` and `Transaction` models
+    - [ ] Backend: Implement `EmailSyncService` (OAuth2 structure)
+    - [ ] Android Core: Fix `ApiService` deserialization (Direct JSON)
+    - [ ] Android Core: Enhance `SmsParser` (Bank Templates & Credit Limits)
+    - [ ] Android Assets: Create Mint/Violet Adaptive App Icon
+    - [ ] Android UI: Implement Auto-Switching Dark Mode
+    - [ ] Android UI: Redesign `DashboardScreen` with Credit Limit cards
+    - [ ] Android UI: Create Unified `TimelineScreen`
+    - [ ] Android UI: Implement `ProfileScreen` & Settings sub-pages
+- [ ] Verification & Build

@@ -20,6 +20,33 @@ class SessionManager @Inject constructor(@ApplicationContext context: Context) {
         private const val KEY_TOKEN = "access_token"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_ID = "user_id"
+        private const val KEY_DARK_MODE = "is_dark_mode"
+        private const val KEY_SMS_SYNC = "sms_sync_enabled"
+        private const val KEY_EMAIL_SYNC = "email_sync_enabled"
+    }
+
+    fun setDarkMode(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_DARK_MODE, enabled).apply()
+    }
+
+    fun isDarkMode(): Boolean {
+        return prefs.getBoolean(KEY_DARK_MODE, false)
+    }
+
+    fun setSmsSync(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SMS_SYNC, enabled).apply()
+    }
+
+    fun isSmsSyncEnabled(): Boolean {
+        return prefs.getBoolean(KEY_SMS_SYNC, true)
+    }
+
+    fun setEmailSync(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_EMAIL_SYNC, enabled).apply()
+    }
+
+    fun isEmailSyncEnabled(): Boolean {
+        return prefs.getBoolean(KEY_EMAIL_SYNC, false)
     }
 
     fun saveUserId(id: Long) {

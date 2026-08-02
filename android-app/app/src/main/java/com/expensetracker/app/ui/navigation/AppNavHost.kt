@@ -8,8 +8,11 @@ import com.expensetracker.app.ui.screens.dashboard.DashboardScreen
 import com.expensetracker.app.ui.screens.login.LoginScreen
 import com.expensetracker.app.ui.screens.login.RegisterScreen
 import com.expensetracker.app.ui.screens.settings.SettingsScreen
+import com.expensetracker.app.ui.screens.settings.ProfileScreen
+import com.expensetracker.app.ui.screens.settings.PlaceholderSettingsScreen
 import com.expensetracker.app.ui.screens.sync.SyncScreen
 import com.expensetracker.app.ui.screens.transactions.TransactionsScreen
+import com.expensetracker.app.ui.screens.transactions.TimelineScreen
 import com.expensetracker.app.ui.screens.transactions.AddTransactionScreen
 import com.expensetracker.app.ui.screens.categories.CategoriesScreen
 import com.expensetracker.app.ui.screens.budgets.BudgetsScreen
@@ -52,6 +55,9 @@ fun AppNavHost(
         composable("transactions") {
             TransactionsScreen(onMenuClick = onOpenDrawer)
         }
+        composable("timeline") {
+            TimelineScreen(onMenuClick = onOpenDrawer)
+        }
         composable("transactions/new") {
             AddTransactionScreen(
                 onNavigateBack = { navController.popBackStack() }
@@ -70,7 +76,31 @@ fun AppNavHost(
             SyncScreen()
         }
         composable("settings") {
-            SettingsScreen(onMenuClick = onOpenDrawer)
+            SettingsScreen(
+                onMenuClick = onOpenDrawer,
+                onNavigateToProfile = { navController.navigate("profile") },
+                onNavigateToNotifications = { navController.navigate("notifications") },
+                onNavigateToSecurity = { navController.navigate("security") },
+                onNavigateToLanguage = { navController.navigate("language") },
+                onNavigateToHelp = { navController.navigate("help") }
+            )
+        }
+        composable("profile") {
+            ProfileScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("notifications") {
+            PlaceholderSettingsScreen("Notifications", onNavigateBack = { navController.popBackStack() })
+        }
+        composable("security") {
+            PlaceholderSettingsScreen("Security", onNavigateBack = { navController.popBackStack() })
+        }
+        composable("language") {
+            PlaceholderSettingsScreen("Language", onNavigateBack = { navController.popBackStack() })
+        }
+        composable("help") {
+            PlaceholderSettingsScreen("Help & Support", onNavigateBack = { navController.popBackStack() })
         }
     }
 }

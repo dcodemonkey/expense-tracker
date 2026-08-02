@@ -26,6 +26,15 @@ class User(Base):
     longitude = Column(Numeric(10, 7), nullable=True)
     last_location_updated_at = Column(DateTime(timezone=True), nullable=True)
     active_session_id = Column(String(255), nullable=True)
+
+    # Email Sync & Preferences
+    email_sync_enabled = Column(Boolean, default=False, nullable=False)
+    gmail_refresh_token = Column(String(500), nullable=True)
+    outlook_refresh_token = Column(String(500), nullable=True)
+    last_email_sync = Column(DateTime(timezone=True), nullable=True)
+    is_dark_mode = Column(Boolean, default=False, nullable=False)
+    sms_parsing_enabled = Column(Boolean, default=True, nullable=False)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -77,6 +86,10 @@ class Transaction(Base):
     transaction_date = Column(Date, nullable=False, index=True)
     raw_message = Column(Text, nullable=True)
     parsed_confidence = Column(Numeric(3, 2), nullable=True)
+
+    # Advanced tracking
+    available_balance = Column(Numeric(12, 2), nullable=True)
+    credit_limit = Column(Numeric(12, 2), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

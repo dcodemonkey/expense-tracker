@@ -74,7 +74,13 @@ fun DashboardScreen(
             }
             is DashboardUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = Flame)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Sync Error or Empty Data", color = Flame, fontWeight = FontWeight.Bold)
+                        Text(text = uiState.message, color = TextMuted, fontSize = 12.sp)
+                        Button(onClick = { viewModel.loadDashboard() }, modifier = Modifier.padding(top = 16.dp)) {
+                            Text("Retry Sync")
+                        }
+                    }
                 }
             }
         }
@@ -99,9 +105,9 @@ fun DashboardContent(
     ) {
         item {
             HeroCard(
-                netAmount = summary.thisMonthNet,
-                income = summary.thisMonthIncome,
-                expenses = summary.thisMonthExpenses,
+                netAmount = summary.thisMonthNet.toDouble(),
+                income = summary.thisMonthIncome.toDouble(),
+                expenses = summary.thisMonthExpenses.toDouble(),
                 trendData = trendData
             )
         }
@@ -112,17 +118,17 @@ fun DashboardContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StatCard(
-                    label = "Today's spend",
-                    value = "₹${summary.todayExpenses}",
-                    icon = Icons.Default.CreditCard,
-                    color = Flame,
+                    label = "Total Savings",
+                    value = "₹${summary.thisMonthNet}",
+                    icon = Icons.Default.Savings,
+                    color = Mint,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    label = "Today's income",
-                    value = "₹${summary.todayIncome}",
-                    icon = Icons.Default.Wallet,
-                    color = Mint,
+                    label = "Credit Available",
+                    value = "₹50,000", // Mock for now, will link to email sync result
+                    icon = Icons.Default.CreditCard,
+                    color = Violet,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -152,7 +158,7 @@ fun DashboardContent(
                     modifier = Modifier.fillMaxWidth().padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Nothing here yet", color = TextMuted)
+                    Text("No transactions tracked yet", color = TextMuted)
                 }
             }
         } else {
@@ -184,6 +190,7 @@ fun BudgetAlertItem(budget: com.expensetracker.app.data.model.BudgetWithProgress
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = CardDefaults.outlinedCardBorder().copy(brush = SolidColor(Flame.copy(alpha = 0.3f)))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

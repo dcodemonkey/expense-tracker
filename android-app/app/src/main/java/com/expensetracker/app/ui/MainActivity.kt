@@ -54,7 +54,8 @@ class MainActivity : ComponentActivity() {
         requestPermissionsIfNeeded()
 
         setContent {
-            ExpenseTrackerTheme {
+            val isDarkMode = sessionManager.isDarkMode()
+            ExpenseTrackerTheme(darkTheme = isDarkMode) {
                 MainContent(sessionManager)
             }
         }
@@ -183,6 +184,7 @@ fun DrawerContent(
 
         val menuItems = listOf(
             DrawerItem("Dashboard", "dashboard", Icons.Default.Dashboard),
+            DrawerItem("Timeline", "timeline", Icons.Default.Timeline),
             DrawerItem("Transactions", "transactions", Icons.Default.ReceiptLong),
             DrawerItem("Categories", "categories", Icons.Default.Category),
             DrawerItem("Budgets", "budgets", Icons.Default.PieChart),

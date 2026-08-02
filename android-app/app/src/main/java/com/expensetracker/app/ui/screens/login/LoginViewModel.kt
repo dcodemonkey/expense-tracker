@@ -36,7 +36,7 @@ class LoginViewModel @Inject constructor(
                     sessionManager.saveUserId(user.id)
                     uiState = LoginUiState.Success
                 }.onFailure {
-                    uiState = LoginUiState.Error("Failed to fetch user details")
+                    uiState = LoginUiState.Error(it.message ?: "Failed to fetch user details")
                 }
             }.onFailure { exception ->
                 uiState = LoginUiState.Error(exception.message ?: "Login failed")

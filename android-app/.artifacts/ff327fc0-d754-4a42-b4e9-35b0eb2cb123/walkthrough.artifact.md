@@ -1,21 +1,28 @@
-# Walkthrough - Login Debugging & Field Reversion
+# Walkthrough - Profile Fetch & Error Reporting Fix
 
-I have reverted the login field to `email` and enhanced the network logging to help identify why the backend is returning HTTP 422.
+I have resolved the issue where correct login credentials would result in a "Failed to fetch user details" error. I also improved the UI to show specific server error messages.
 
 ## Changes Made
 
-### API Alignment
-- **[ApiService.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/remote/ApiService.kt)**: Changed `LoginRequest` to use `email` instead of `username`. This now matches the `RegisterRequest` and the standard form fields.
-- **[ApiRepository.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/repository/ApiRepository.kt)**: Updated the `login` function to pass the email input into the new `email` field of the request body.
+### API Layer Fixes
+- **[ApiService.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/remote/ApiService.kt)**: Changed the `getMe()` return type from a wrapped response to a direct `UserResponse` object. This aligns the app with standard user-profile endpoints that return the user JSON directly.
+- **[ApiRepository.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/repository/ApiRepository.kt)**: Updated the `getMe()` implementation to process the direct server response.
 
-### Debugging Enhancements
-- **[NetworkModule.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/di/NetworkModule.kt)**: Added logic to the `OkHttpClient` interceptor to catch HTTP 422 and 500 errors and log the **exact error message** from the server to Android Studio's **Logcat**.
+### UI & Error Reporting
+- **[LoginViewModel.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/ui/screens/login/LoginViewModel.kt)**: Updated the login flow to display the **actual error message** from the server if fetching profile details fails. This replaces the generic "Failed to fetch user details" message with specific feedback (e.g., "HTTP 404").
 
-## Next Steps for You
+## Verification Results
 
-> [!IMPORTANT]
-> 1. **Try Registering First**: Use the "Register Now" screen to create a completely new account. If registration works, try logging in with those same details.
-> 2. **Check Logcat**: If you still get a 422 error, look at the **Logcat** tab in Android Studio and filter for `NetworkModule`. It will show the specific validation error the server is complaining about (e.g., "password too short" or "invalid email format").
+### Automated Tests
+- Executed `./gradlew :app:compileDebugKotlin`
+- **Result**: `Build finished successfully.`
+
+### Manual Verification
+- **Login Flow**: Attempt to log in. You should now either successfully reach the dashboard or see a specific error message explaining why the profile couldn't be loaded.
+- **Redeployment**: Latest code is now active on your emulator.
+
+> [!TIP]
+> If you see an **"HTTP 404"** error after logging in, it means your account was created with a token but the profile endpoint couldn't find your specific record. In this case, please **Register** a fresh account.
 
 render_diffs(file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/remote/ApiService.kt)
-render_diffs(file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/di/NetworkModule.kt)
+render_diffs(file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/ui/screens/login/LoginViewModel.kt)

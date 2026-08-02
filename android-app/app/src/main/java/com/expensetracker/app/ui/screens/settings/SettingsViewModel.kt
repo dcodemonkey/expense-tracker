@@ -17,8 +17,32 @@ class SettingsViewModel @Inject constructor(
     val userEmail: String?
         get() = sessionManager.getUserEmail()
 
+    val isDarkMode: Boolean
+        get() = sessionManager.isDarkMode()
+
+    val isSmsSync: Boolean
+        get() = sessionManager.isSmsSyncEnabled()
+
+    val isEmailSync: Boolean
+        get() = sessionManager.isEmailSyncEnabled()
+
     fun logout() {
         sessionManager.clearSession()
+    }
+
+    fun toggleDarkMode(enabled: Boolean) {
+        sessionManager.setDarkMode(enabled)
+    }
+
+    fun toggleSmsSync(enabled: Boolean) {
+        sessionManager.setSmsSync(enabled)
+    }
+
+    fun toggleEmailSync(enabled: Boolean) {
+        sessionManager.setEmailSync(enabled)
+        viewModelScope.launch {
+            repository.configEmailSync(enabled)
+        }
     }
 
     fun seedData() {

@@ -6,28 +6,29 @@ import retrofit2.http.*
 
 interface ApiService {
     @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest): ApiResponse<AuthResponse>
+    suspend fun register(@Body request: RegisterRequest): AuthResponse
 
+    @FormUrlEncoded
     @POST("auth/login")
-    suspend fun login(@Body request: LoginRequest): ApiResponse<AuthResponse>
+    suspend fun login(@Field("username") email: String, @Field("password") password: String): AuthResponse
 
     @GET("auth/me")
-    suspend fun getMe(): ApiResponse<UserResponse>
+    suspend fun getMe(): UserResponse
 
     @PUT("auth/me")
-    suspend fun updateMe(@Body request: UpdateUserRequest): ApiResponse<UserResponse>
+    suspend fun updateMe(@Body request: UpdateUserRequest): UserResponse
 
     @GET("categories")
-    suspend fun getCategories(): ApiResponse<List<Category>>
+    suspend fun getCategories(): List<Category>
 
     @POST("categories")
-    suspend fun createCategory(@Body request: CreateCategoryRequest): ApiResponse<Category>
+    suspend fun createCategory(@Body request: CreateCategoryRequest): Category
 
     @PUT("categories/{id}")
-    suspend fun updateCategory(@Path("id") id: Long, @Body request: UpdateCategoryRequest): ApiResponse<Category>
+    suspend fun updateCategory(@Path("id") id: Long, @Body request: UpdateCategoryRequest): Category
 
     @DELETE("categories/{id}")
-    suspend fun deleteCategory(@Path("id") id: Long): ApiResponse<Unit>
+    suspend fun deleteCategory(@Path("id") id: Long)
 
     @GET("transactions")
     suspend fun getTransactions(
@@ -38,90 +39,98 @@ interface ApiService {
         @Query("merchant") merchant: String? = null,
         @Query("skip") skip: Int = 0,
         @Query("limit") limit: Int = 50
-    ): ApiResponse<PaginatedResponse<Transaction>>
+    ): PaginatedResponse<Transaction>
 
     @POST("transactions")
-    suspend fun createTransaction(@Body request: CreateTransactionRequest): ApiResponse<Transaction>
+    suspend fun createTransaction(@Body request: CreateTransactionRequest): Transaction
 
     @GET("transactions/{id}")
-    suspend fun getTransaction(@Path("id") id: Long): ApiResponse<Transaction>
+    suspend fun getTransaction(@Path("id") id: Long): Transaction
 
     @PUT("transactions/{id}")
-    suspend fun updateTransaction(@Path("id") id: Long, @Body request: UpdateTransactionRequest): ApiResponse<Transaction>
+    suspend fun updateTransaction(@Path("id") id: Long, @Body request: UpdateTransactionRequest): Transaction
 
     @DELETE("transactions/{id}")
-    suspend fun deleteTransaction(@Path("id") id: Long): ApiResponse<Unit>
+    suspend fun deleteTransaction(@Path("id") id: Long)
 
     @GET("transactions/summary")
     suspend fun getTransactionSummary(
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null
-    ): ApiResponse<TransactionSummary>
+    ): TransactionSummary
 
     @GET("budgets")
-    suspend fun getBudgets(): ApiResponse<List<BudgetWithProgress>>
+    suspend fun getBudgets(): List<BudgetWithProgress>
 
     @POST("budgets")
-    suspend fun createBudget(@Body request: CreateBudgetRequest): ApiResponse<Budget>
+    suspend fun createBudget(@Body request: CreateBudgetRequest): Budget
 
     @GET("budgets/{id}")
-    suspend fun getBudget(@Path("id") id: Long): ApiResponse<Budget>
+    suspend fun getBudget(@Path("id") id: Long): Budget
 
     @PUT("budgets/{id}")
-    suspend fun updateBudget(@Path("id") id: Long, @Body request: UpdateBudgetRequest): ApiResponse<Budget>
+    suspend fun updateBudget(@Path("id") id: Long, @Body request: UpdateBudgetRequest): Budget
 
     @DELETE("budgets/{id}")
-    suspend fun deleteBudget(@Path("id") id: Long): ApiResponse<Unit>
+    suspend fun deleteBudget(@Path("id") id: Long)
 
     @GET("insights/dashboard")
-    suspend fun getDashboard(): ApiResponse<DashboardSummary>
+    suspend fun getDashboard(): DashboardSummary
 
     @GET("insights/spending-trend")
-    suspend fun getSpendingTrend(@Query("days") days: Int = 30): ApiResponse<SpendingTrend>
+    suspend fun getSpendingTrend(@Query("days") days: Int = 30): SpendingTrend
 
     @GET("insights/merchant-analysis")
     suspend fun getMerchantAnalysis(
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null,
         @Query("limit") limit: Int = 20
-    ): ApiResponse<List<MerchantAnalysis>>
+    ): List<MerchantAnalysis>
 
     @GET("insights/category-breakdown")
     suspend fun getCategoryBreakdown(
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null
-    ): ApiResponse<List<CategoryBreakdown>>
+    ): List<CategoryBreakdown>
 
     @GET("insights/daily-insights")
     suspend fun getDailyInsights(
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null
-    ): ApiResponse<List<DailyInsight>>
+    ): List<DailyInsight>
 
     @POST("auth/seed")
-    suspend fun seedData(): ApiResponse<SeedResponse>
+    suspend fun seedData(): SeedResponse
 
     @POST("auth/forgot-password")
-    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): ApiResponse<MessageResponse>
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): MessageResponse
 
     @POST("auth/reset-password")
-    suspend fun resetPassword(@Body request: ResetPasswordRequest): ApiResponse<MessageResponse>
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): MessageResponse
 
     @POST("sync/sync")
-    suspend fun syncDevice(@Body request: SyncRequest): ApiResponse<SyncResponse>
+    suspend fun syncDevice(@Body request: SyncRequest): SyncResponse
 
     @GET("sync/devices")
-    suspend fun getDevices(): ApiResponse<List<Device>>
+    suspend fun getDevices(): List<Device>
 
     @DELETE("sync/devices/{device_id}")
-    suspend fun deleteDevice(@Path("device_id") deviceId: String): ApiResponse<Unit>
+    suspend fun deleteDevice(@Path("device_id") deviceId: String)
+
+    // New Advanced Sync Endpoints
+    @POST("sync/email/trigger")
+    suspend fun triggerEmailSync(): MessageResponse
+
+    @POST("sync/email/config")
+    suspend fun configEmailSync(@Query("enabled") enabled: Boolean): MessageResponse
 }
 
 data class ApiResponse<T>(
     @SerializedName("success") val success: Boolean,
     @SerializedName("data") val data: T? = null,
     @SerializedName("error") val error: String? = null,
-    @SerializedName("message") val message: String? = null
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("detail") val detail: String? = null
 )
 
 data class PaginatedResponse<T>(
@@ -137,11 +146,6 @@ data class RegisterRequest(
     @SerializedName("password") val password: String,
     @SerializedName("full_name") val fullName: String? = null,
     @SerializedName("phone_number") val phoneNumber: String? = null
-)
-
-data class LoginRequest(
-    @SerializedName("email") val email: String,
-    @SerializedName("password") val password: String
 )
 
 data class AuthResponse(
