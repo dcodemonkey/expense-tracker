@@ -1,50 +1,26 @@
-# Implementation Plan - Web-like UI Redesign and Login Fix
+# Implementation Plan - Debugging Login HTTP 422/500
 
-## Goal
-Redesign the Android app UI to match the "web mobile view" experience provided in the screenshots and fix the HTTP 422 login error.
-
-## User Review Required
-> [!IMPORTANT]
-> The UI overhaul will switch the app to a light theme by default (to match the screenshot) and replace the Bottom Navigation Bar with a Navigation Drawer for a more "web-like" sidebar experience.
+The application is stuck between a 422 (validation error) and 500 (server crash). This plan aims to find the exact format the backend requires by adding better logging and trying the most standard formats.
 
 ## Proposed Changes
 
-### [Theme & Styling]
-#### [MODIFY] [Color.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/ui/theme/Color.kt)
-- Add light theme colors: `LightBackground`, `CardWhite`, `InputBackground`, `TextDark`, `TextMuted`.
+### [Component: Data & Network]
 
-#### [MODIFY] [Theme.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/ui/theme/Theme.kt)
-- Update `DarkColorScheme` and `LightColorScheme` to use the new colors.
-- Ensure `ExpenseTrackerTheme` uses the new light scheme as the primary design to match the screenshot.
-
-### [Login & Registration Screens]
-#### [MODIFY] [LoginScreen.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/ui/screens/login/LoginScreen.kt)
-- Redesign the layout:
-    - Wallet icon with a gradient background at the top.
-    - "Welcome back" / "Sign in to your ledger" titles.
-    - Centered Card container for the form.
-    - Text fields with labels above them.
-    - Softer "Mint" primary button.
-    - Footer links for registration and password reset.
-
-#### [MODIFY] [RegisterScreen.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/ui/screens/login/RegisterScreen.kt)
-- Apply similar styling changes to match the login screen.
-
-### [Navigation Overhaul]
-#### [MODIFY] [MainActivity.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/ui/MainActivity.kt)
-- Replace `Scaffold` with a `ModalNavigationDrawer`.
-- Implement a custom `DrawerContent` that matches the second screenshot.
-
-### [Data & Network]
 #### [MODIFY] [ApiService.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/remote/ApiService.kt)
-- Updated `LoginRequest` to use `username` instead of `email` to fix the 422 validation error.
+- Revert `LoginRequest` to use `email` (to match `RegisterRequest`).
+- Keep it as a JSON `@Body` for now, as `@FormUrlEncoded` previously gave a 500 error.
+
+#### [MODIFY] [NetworkModule.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/di/NetworkModule.kt)
+- Ensure the error interceptor logs the full response body for 422 and 500 errors to Logcat.
+
+### [Component: UI - Screens]
+
+#### [MODIFY] [LoginScreen.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/ui/screens/login/LoginScreen.kt)
+- Update the error message display to show a more detailed error if possible, or at least confirm the error code.
 
 ## Verification Plan
-### Automated Tests
-- Run `./gradlew :app:compileDebugKotlin` to verify the build.
-- Deploy to emulator.
 
 ### Manual Verification
-- Verify that the login text fields are visible and follow the new design.
-- Attempt to login with a valid account (check if 422 is resolved).
-- Open the navigation drawer and verify it matches the "Ledger" sidebar from the screenshot.
+1. **Try Registration**: Use the "Register Now" screen to create a new account. If this works, it confirms the backend handles JSON and `email` correctly.
+2. **Try Login**: After registering, try logging in with those credentials.
+3. **Check Logcat**: If it still fails, I will need you to provide the output of Logcat filtered by `NetworkModule`.

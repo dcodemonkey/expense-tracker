@@ -1,4 +1,5 @@
-- [x] Redesign UI to match Web Experience
-- [x] Fix HTTP 422 Login Error (Revert to `email`)
-- [x] UI Polish & Text Visibility
-- [x] Verify build and deploy
+- [x] Debug Login HTTP 422
+    - [x] Revert `LoginRequest` field to `email` in `ApiService.kt`
+    - [x] Update `ApiRepository.kt` mapping
+    - [x] Enhance error logging in `NetworkModule.kt`
+- [/] Verify build and deploy

@@ -45,6 +45,9 @@ object NetworkModule {
                 
                 if (response.code == 401) {
                     sessionManager.clearSession()
+                } else if (response.code == 422 || response.code == 500) {
+                    val errorBody = response.peekBody(Long.MAX_VALUE).string()
+                    android.util.Log.e("NetworkModule", "Error ${response.code}: $errorBody")
                 }
                 
                 response
