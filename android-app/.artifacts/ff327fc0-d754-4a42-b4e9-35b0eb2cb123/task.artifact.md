@@ -1,11 +1,14 @@
-- [/] Advanced Feature Completion & Sync
-    - [ ] Backend: Update `User` and `Transaction` models
-    - [ ] Backend: Implement `EmailSyncService` (OAuth2 structure)
-    - [ ] Android Core: Fix `ApiService` deserialization (Direct JSON)
-    - [ ] Android Core: Enhance `SmsParser` (Bank Templates & Credit Limits)
-    - [ ] Android Assets: Create Mint/Violet Adaptive App Icon
-    - [ ] Android UI: Implement Auto-Switching Dark Mode
-    - [ ] Android UI: Redesign `DashboardScreen` with Credit Limit cards
-    - [ ] Android UI: Create Unified `TimelineScreen`
-    - [ ] Android UI: Implement `ProfileScreen` & Settings sub-pages
-- [ ] Verification & Build
+- [x] Fix Dashboard JSON Parsing Error
+    - [x] Enable API Desugaring for Java 8 Time support
+    - [x] Add `LocalDateAdapter` and `LocalDateTimeAdapter` to `AppModule.kt`
+    - [x] Update `provideGson` with custom adapters
+- [x] Implement Reactive Theme & Workers
+    - [x] Update `SessionManager.kt` with setting `Flow`s
+    - [x] Update `MainActivity.kt` to observe theme and schedule workers
+- [x] Implement Profile Management Logic
+    - [x] Connect `ProfileScreen.kt` to `updateMe` API
+    - [x] Add sidebar navigation to Profile
+- [x] Finalize Advanced Tracking
+    - [x] Enhance SMS Parser patterns
+    - [x] Create Mint/Violet App Icon
+- [x] Verify build and deploy

@@ -39,7 +39,7 @@ interface ApiService {
         @Query("merchant") merchant: String? = null,
         @Query("skip") skip: Int = 0,
         @Query("limit") limit: Int = 50
-    ): PaginatedResponse<Transaction>
+    ): List<Transaction>
 
     @POST("transactions")
     suspend fun createTransaction(@Body request: CreateTransactionRequest): Transaction

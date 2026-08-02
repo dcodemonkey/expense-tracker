@@ -30,8 +30,8 @@ class TransactionsViewModel @Inject constructor(
         filterType = type
         viewModelScope.launch {
             uiState = TransactionsUiState.Loading
-            repository.getTransactions(type = type).onSuccess { response ->
-                uiState = TransactionsUiState.Success(response.items)
+            repository.getTransactions(type = type).onSuccess { transactions ->
+                uiState = TransactionsUiState.Success(transactions)
             }.onFailure { exception ->
                 uiState = TransactionsUiState.Error(exception.message ?: "Failed to load transactions")
             }

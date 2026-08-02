@@ -21,6 +21,11 @@ object SmsParser {
         Pattern.compile("(?i)(?:credited|received|deposited)\\s+(?:rs\\.?|inr|₹)?\\s*([\\d,]+\\.?\\d*)"),
     )
 
+    private val BALANCE_PATTERNS = listOf(
+        Pattern.compile("(?i)(?:bal|balance|avbl|avl)\\s*(?:rs\\.?|inr|₹)?\\s*([\\d,]+\\.?\\d*)"),
+        Pattern.compile("(?i)Available\\s+Credit\\s+Limit\\s*(?:rs\\.?|inr|₹)?\\s*([\\d,]+\\.?\\d*)")
+    )
+
     private val MERCHANT_PATTERNS = listOf(
         Pattern.compile("(?i)(?:at|from|to|via)\\s+([A-Za-z0-9\\s&\\-.]+?)(?:\\s+(?:on|at|for|using|via|ref|txn|transaction|amount|rs|inr|₹)|$)"),
         Pattern.compile("(?i)(?:merchant|payee):\\s*([A-Za-z0-9\\s&\\-.]+)"),
@@ -29,18 +34,6 @@ object SmsParser {
     private val DATE_PATTERNS = listOf(
         Pattern.compile("(?i)(?:on|dated)\\s+(\\d{1,2}[-/]\\d{1,2}[-/]\\d{2,4})"),
         Pattern.compile("(?i)(?:on|dated)\\s+(\\d{1,2}\\s+\\w{3}\\s+\\d{2,4})"),
-    )
-
-    private val CARD_PATTERNS = listOf(
-        Pattern.compile("(?i)(?:card|ending|xxx)\\s*(\\d{4})"),
-        Pattern.compile("(?i)(\\d{4})\\s*(?:debited|credited)"),
-    )
-
-    private val BANK_SENDER_KEYWORDS = setOf(
-        "hdfc", "icici", "sbi", "axis", "kotak", "yes", "idfc", "indusind",
-        "federal", "rbl", "citi", "hsbc", "standard chartered", "bandhan",
-        "bank of baroda", "pnb", "canara", "union bank", "indian bank",
-        "phonepe", "gpay", "paytm", "amazonpay", "whatsapp"
     )
 
     private val CATEGORY_KEYWORDS = mapOf(
@@ -59,14 +52,6 @@ object SmsParser {
         val contentLower = content.lowercase()
         val senderLower = sender.lowercase()
 
-        if (!contentLower.contains("rs") && !contentLower.contains("inr") && !contentLower.contains("₹") &&
-            !contentLower.contains("debited") && !contentLower.contains("credited") &&
-            !contentLower.contains("spent") && !contentLower.contains("paid") &&
-            !contentLower.contains("charged") && !contentLower.contains("received") &&
-            !contentLower.contains("deposited") && !contentLower.contains("salary")) {
-            return null
-        }
-
         val amount = extractAmount(contentLower)
         if (amount == null) return null
 
@@ -78,7 +63,7 @@ object SmsParser {
 
         return ParsedMessage(
             userId = 0,
-            source = if (senderLower.contains("email")) TransactionSource.EMAIL else TransactionSource.SMS,
+            source = TransactionSource.SMS,
             rawContent = content,
             sender = sender,
             receivedAt = receivedAt,
@@ -112,7 +97,7 @@ object SmsParser {
             if (matcher.find()) {
                 val merchant = matcher.group(1).trim()
                 if (merchant.length >= 2 && merchant.length <= 100) {
-                    return merchant.split(" ").joinToString(" ") { it.capitalize() }
+                    return merchant.split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
                 }
             }
         }
@@ -174,22 +159,5 @@ object SmsParser {
             hasAmount -> 0.6
             else -> 0.3
         }
-    }
-
-    fun toTransaction(parsed: ParsedMessage, userId: Long, categoryId: Long?): Transaction {
-        return Transaction(
-            userId = userId,
-            amount = parsed.parsedAmount!!,
-            currency = parsed.parsedCurrency!!,
-            type = parsed.parsedType!!,
-            source = parsed.source,
-            categoryId = categoryId,
-            description = parsed.rawContent.take(500),
-            merchantName = parsed.parsedMerchant,
-            transactionDate = parsed.parsedDate!!,
-            rawMessage = parsed.rawContent,
-            parsedConfidence = BigDecimal(parsed.confidenceScore!!).setScale(2, RoundingMode.HALF_UP).toDouble(),
-            synced = false
-        )
     }
 }

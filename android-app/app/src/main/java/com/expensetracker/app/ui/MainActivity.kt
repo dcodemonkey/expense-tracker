@@ -26,6 +26,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.expensetracker.app.worker.DailySmsScanWorker
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -34,6 +40,7 @@ import com.expensetracker.app.ui.navigation.AppNavHost
 import com.expensetracker.app.ui.theme.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -45,19 +52,43 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        // Runtime permissions handling
+        if (permissions[Manifest.permission.READ_SMS] == true) {
+            setupSmsWorker()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         requestPermissionsIfNeeded()
+        setupSmsWorker()
 
         setContent {
-            val isDarkMode = sessionManager.isDarkMode()
+            val isDarkMode by sessionManager.darkModeFlow.collectAsState()
+            
             ExpenseTrackerTheme(darkTheme = isDarkMode) {
                 MainContent(sessionManager)
             }
+        }
+    }
+
+    private fun setupSmsWorker() {
+        if (sessionManager.isSmsSyncEnabled()) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val workRequest = PeriodicWorkRequestBuilder<DailySmsScanWorker>(24, TimeUnit.HOURS)
+                .setConstraints(constraints)
+                .build()
+
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "daily_sms_scan",
+                ExistingPeriodicWorkPolicy.KEEP,
+                workRequest
+            )
+        } else {
+            WorkManager.getInstance(this).cancelUniqueWork("daily_sms_scan")
         }
     }
 

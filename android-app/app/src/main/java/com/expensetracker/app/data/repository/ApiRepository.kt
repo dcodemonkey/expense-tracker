@@ -110,9 +110,8 @@ class ApiRepository @Inject constructor(
         merchant: String? = null,
         skip: Int = 0,
         limit: Int = 50
-    ): Result<PaginatedResponse<Transaction>> {
+    ): Result<List<Transaction>> {
         return try {
-            // Mapping uppercase filter types to lowercase for backend compatibility
             val formattedType = type?.lowercase()
             Result.success(apiService.getTransactions(startDate, endDate, categoryId, formattedType, merchant, skip, limit))
         } catch (e: Exception) {
