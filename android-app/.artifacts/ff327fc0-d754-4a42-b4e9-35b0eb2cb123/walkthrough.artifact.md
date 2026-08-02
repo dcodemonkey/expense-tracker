@@ -1,24 +1,21 @@
-# Walkthrough - Login Validation Fix (HTTP 422)
+# Walkthrough - Login Debugging & Field Reversion
 
-I have resolved the **HTTP 422** login error by aligning the API request field name with the backend's expected schema.
+I have reverted the login field to `email` and enhanced the network logging to help identify why the backend is returning HTTP 422.
 
 ## Changes Made
 
-### Backend Compatibility
-- **[ApiService.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/remote/ApiService.kt)**: Updated the `LoginRequest` data class to use the field name `username` instead of `email`. Even when logging in with an email address, many backends (specifically those using standard OAuth2 or FastAPI patterns) require the identifier field to be named `username`.
-- **[ApiRepository.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/repository/ApiRepository.kt)**: Updated the `login` method to correctly map the user's email input to the new `username` field in the API request.
+### API Alignment
+- **[ApiService.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/remote/ApiService.kt)**: Changed `LoginRequest` to use `email` instead of `username`. This now matches the `RegisterRequest` and the standard form fields.
+- **[ApiRepository.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/repository/ApiRepository.kt)**: Updated the `login` function to pass the email input into the new `email` field of the request body.
 
-## Verification Results
+### Debugging Enhancements
+- **[NetworkModule.kt](file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/di/NetworkModule.kt)**: Added logic to the `OkHttpClient` interceptor to catch HTTP 422 and 500 errors and log the **exact error message** from the server to Android Studio's **Logcat**.
 
-### Automated Tests
-- Executed build and deployment to the emulator.
-- **Result**: `Successfully deployed com.expensetracker.app.debug`.
+## Next Steps for You
 
-### Manual Verification
-- The app is now sending the login identifier as `username`, which should satisfy the backend's validation rules and eliminate the 422 error.
-
-> [!NOTE]
-> If you still encounter an error, it may be due to an incorrect password or an unverified account. Please double-check your credentials on the web version if possible.
+> [!IMPORTANT]
+> 1. **Try Registering First**: Use the "Register Now" screen to create a completely new account. If registration works, try logging in with those same details.
+> 2. **Check Logcat**: If you still get a 422 error, look at the **Logcat** tab in Android Studio and filter for `NetworkModule`. It will show the specific validation error the server is complaining about (e.g., "password too short" or "invalid email format").
 
 render_diffs(file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/remote/ApiService.kt)
-render_diffs(file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/data/repository/ApiRepository.kt)
+render_diffs(file:///D:/Projects/expense-tracker/android-app/app/src/main/java/com/expensetracker/app/di/NetworkModule.kt)

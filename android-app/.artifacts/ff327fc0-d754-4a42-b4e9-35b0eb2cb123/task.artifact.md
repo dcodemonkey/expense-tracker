@@ -2,4 +2,4 @@
     - [x] Revert `LoginRequest` field to `email` in `ApiService.kt`
     - [x] Update `ApiRepository.kt` mapping
     - [x] Enhance error logging in `NetworkModule.kt`
-- [/] Verify build and deploy
+- [x] Verify build and deploy
