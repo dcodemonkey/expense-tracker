@@ -1,274 +1,146 @@
-# Expense Tracker - Full Stack Application
+# Expense Tracker
 
-A comprehensive expense tracking application with web (React + FastAPI) and Android (Kotlin + Compose) clients that automatically extracts transactions from SMS and email messages.
-
-## Features
-
-### Core Features
-- **Automatic Transaction Extraction**: Parse SMS and email messages for financial transactions
-- **Multi-platform**: Web dashboard + Android app with real-time sync
-- **Smart Categorization**: ML-based merchant categorization (Food, Transport, Shopping, etc.)
-- **Budget Management**: Set budgets by category with alerts
-- **Insights & Analytics**: Daily/weekly/monthly spending trends, merchant analysis, category breakdowns
-- **Real-time Sync**: Background sync from Android to cloud
-
-### Web Application (React + FastAPI)
-- Modern React 18 + TypeScript + Vite frontend
-- FastAPI + SQLAlchemy + PostgreSQL backend
-- JWT Authentication with secure password hashing
-- Interactive charts with Recharts
-- Responsive design with Tailwind CSS
-- RESTful API with OpenAPI documentation
-
-### Android Application (Kotlin + Compose)
-- Jetpack Compose UI with Material 3
-- Hilt Dependency Injection
-- Room Database for offline-first architecture
-- WorkManager for background sync
-- SMS BroadcastReceiver for automatic parsing
-- Firebase Cloud Messaging for push notifications
-- SMS parsing with regex patterns for Indian banks/UPI
-
-## Architecture
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Android App   │◄───►│   FastAPI Backend│◄───►│  React Web App  │
-│  (SMS/Email)    │     │  (PostgreSQL)   │     │  (Dashboard)    │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │                       │
-        ▼                       ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  Local Room DB  │     │  Redis Cache    │     │  LocalStorage   │
-│  (Offline)      │     │  (Sessions)     │     │  (Auth Token)   │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-```
-
-## Quick Start
-
-### Prerequisites
-- Docker & Docker Compose
-- Node.js 18+
-- Python 3.11+
-- Android Studio (for Android development)
-
-### 🚀 Unified One-Click Launcher (Recommended)
-
-From the root directory (`d:\Projects\expense-tracker`), choose your favorite way to start all 3 services (**Backend**, **Frontend**, and **Admin**) in one command:
-
-* **Windows Batch (Double-Click)**:
-  Double-click `start-all.bat` or run in CMD:
-  ```cmd
-  start-all.bat
-  ```
-
-* **Git Bash / Terminal**:
-  ```bash
-  ./start-all.sh
-  ```
-
-* **PowerShell**:
-  ```powershell
-  .\start-all.ps1
-  ```
+A multi-platform application that parses transactional SMS and email messages automatically to track your spending. It syncs data in real-time between a React-based web dashboard and an Android mobile client, backed by a robust FastAPI service.
 
 ---
 
-### Manual Individual Setup
-If you prefer running services in separate terminals:
+## How it works
 
-#### Backend Setup
-```bash
-cd backend
-python -m venv venv
-source venv/Scripts/activate
-pip install .
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
+The core idea is simple: instead of manually logging every coffee or grocery purchase, the system captures transactions from the financial notifications you already receive.
 
-#### Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
+1. **Capture:** The Android app listens for incoming transaction SMS alerts (supporting major Indian banks like HDFC, SBI, ICICI, etc., and payment apps like Paytm or PhonePe).
+2. **Sync:** A local background worker extracts details (amount, merchant, transaction type) and securely pushes them to the backend server.
+3. **Visualize:** You log in to the web dashboard to see real-time charts, daily analytics, custom budget progression, and category breakdowns.
 
-#### Admin Panel Setup
-```bash
-cd admin
-pip install -r requirements.txt
-export API_BASE_URL=http://127.0.0.1:8000/api/v1
-streamlit run app.py
-```
+---
 
-## API Endpoints
+## Key Features
 
-### Authentication
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - Login (OAuth2 password flow)
-- `GET /api/v1/auth/me` - Get current user
-- `PUT /api/v1/auth/me` - Update profile
+* **Auto-Extraction:** Regex-based parsers extract amounts, merchants, and categories from standard banking notification templates.
+* **Offline Support:** The Android app uses an offline-first Room database, queuing sync requests with WorkManager to push transactions once an internet connection is established.
+* **Smart Categorization:** Uses a basic rule engine to auto-assign categories (e.g., Food & Dining, Travel, Utilities) based on merchant names.
+* **Budget Tracking:** Set category-level limits and receive warnings when spending approaches your limit.
+* **Weather & Context Integration:** Features a location-aware weather widget on the dashboard (using browser geolocation with a reliable multi-provider IP consensus fallback).
 
-### Categories
-- `GET /api/v1/categories` - List categories
-- `POST /api/v1/categories` - Create category
-- `PUT /api/v1/categories/{id}` - Update category
-- `DELETE /api/v1/categories/{id}` - Delete category
-
-### Transactions
-- `GET /api/v1/transactions` - List transactions (with filters)
-- `POST /api/v1/transactions` - Create transaction
-- `GET /api/v1/transactions/summary` - Get summary stats
-- `PUT /api/v1/transactions/{id}` - Update transaction
-- `DELETE /api/v1/transactions/{id}` - Delete transaction
-
-### Budgets
-- `GET /api/v1/budgets` - List budgets with progress
-- `POST /api/v1/budgets` - Create budget
-- `PUT /api/v1/budgets/{id}` - Update budget
-- `DELETE /api/v1/budgets/{id}` - Delete budget
-
-### Insights
-- `GET /api/v1/insights/dashboard` - Dashboard summary
-- `GET /api/v1/insights/spending-trend` - Spending trends
-- `GET /api/v1/insights/merchant-analysis` - Top merchants
-- `GET /api/v1/insights/category-breakdown` - Category breakdown
-- `GET /api/v1/insights/daily-insights` - Daily insights
-
-### Sync (Android)
-- `POST /api/v1/sync/sync` - Sync device messages
-- `GET /api/v1/sync/devices` - List registered devices
-- `DELETE /api/v1/sync/devices/{id}` - Remove device
-
-## SMS Parsing
-
-Supports major Indian banks and payment apps:
-- HDFC, ICICI, SBI, Axis, Kotak, Yes Bank, IDFC, Federal, RBL, IndusInd
-- PhonePe, Google Pay, Paytm, Amazon Pay
-- Generic UPI and card transaction formats
-
-### Example Parsed Messages
-```
-"Rs.500.00 debited from A/c XX1234 on 15-Jan-2024 at Swiggy. Info: Order #12345"
-→ Amount: ₹500, Merchant: Swiggy, Category: Food & Dining, Type: Expense
-
-"Rs.50000.00 credited to A/c XX1234 on 01-Jan-2024. Salary for Jan 2024"
-→ Amount: ₹50,000, Type: Income, Category: Salary
-```
+---
 
 ## Tech Stack
 
-### Backend
-- **FastAPI** - Modern Python web framework
-- **SQLAlchemy 2.0** - Async ORM
-- **PostgreSQL** - Primary database
-- **Alembic** - Database migrations
-- **Pydantic** - Data validation
-- **JWT** - Authentication
-- **Passlib** - Password hashing
+* **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, TanStack Query, Recharts
+* **Backend:** FastAPI, SQLAlchemy 2.0 (Async), PostgreSQL, Alembic, Redis
+* **Android:** Kotlin, Jetpack Compose, Hilt, Room DB, WorkManager, Retrofit
+* **Deployment:** Docker Compose, GitHub Actions
 
-### Frontend
-- **React 18** - UI library
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **TanStack Query** - Server state management
-- **React Router** - Routing
-- **Recharts** - Charts
-- **Tailwind CSS** - Styling
-- **React Hook Form + Zod** - Forms & validation
+---
 
-### Android
-- **Kotlin** - Language
-- **Jetpack Compose** - UI toolkit
-- **Hilt** - Dependency injection
-- **Room** - Local database
-- **Retrofit** - Networking
-- **WorkManager** - Background tasks
-- **Coroutines/Flow** - Async programming
+## Getting Started
 
-## Project Structure
+### Prerequisites
 
-```
-expense-tracker/
-├── backend/
-│   ├── app/
-│   │   ├── api/v1/endpoints/    # API route handlers
-│   │   ├── core/                # Config, security, database
-│   │   ├── models/              # SQLAlchemy models
-│   │   ├── schemas/             # Pydantic schemas
-│   │   ├── services/            # Business logic (SMS parser, insights)
-│   │   └── main.py              # FastAPI app entry
-│   ├── pyproject.toml
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── components/          # Reusable UI components
-│   │   ├── pages/               # Page components
-│   │   ├── hooks/               # Custom React hooks
-│   │   ├── lib/                 # Utilities, API client
-│   │   └── types/               # TypeScript types
-│   ├── package.json
-│   └── vite.config.ts
-└── android-app/
-    └── app/
-        └── src/main/java/com/expensetracker/app/
-            ├── data/            # Data layer (local, remote, repository)
-            ├── di/              # Hilt modules
-            ├── ui/              # Compose UI screens
-            ├── service/         # SMS receiver, FCM service
-            └── worker/          # WorkManager workers
+To run the web dashboard and API server, you only need:
+* **Docker Desktop** (make sure it is running)
+* **Android Studio** (only if you want to run the mobile app)
+
+---
+
+### Running the Services (Docker)
+
+We provide automated scripts to verify that Docker is installed and running, then spin up the backend, frontend, database, and Redis cache containers.
+
+#### PowerShell (Windows)
+Run the script:
+```powershell
+.\start.ps1
 ```
 
-## Environment Variables
+#### Git Bash (or Linux / macOS)
+Run the shell script:
+```bash
+chmod +x start.sh
+./start.sh
+```
 
-### Backend (.env)
+Once started, the services are accessible at:
+* **Web Dashboard:** http://localhost:3000
+* **API Documentation:** http://localhost:8000/docs
+* **Admin Dashboard:** http://localhost:8501
+
+To stop all services and container processes:
+```bash
+docker compose down
+```
+
+---
+
+### Running the Android Client
+
+1. Open the `android-app` folder inside Android Studio.
+2. Let Gradle sync project files.
+3. Start an emulator or connect a physical device via USB debugging.
+4. Click **Run**.
+> *Note: If you run an emulator on the same machine as the backend, ensure the API base URL in the app configurations points to `http://10.0.2.2:8000/api/v1` so the emulator can bridge to your machine's localhost.*
+
+---
+
+## Config & Environment Variables
+
+### Backend Configuration (`backend/.env`)
+
+Copy the example env file and update your variables:
 ```env
 DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/expense_tracker
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=generate-a-secure-random-key-here
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=11520
+ACCESS_TOKEN_EXPIRE_MINUTES=11520   # 8-day token validity
 FRONTEND_URL=http://localhost:3000
 ```
 
-## Development
+### Frontend Configuration (`frontend/.env.production`)
 
-### Running Tests
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+---
+
+## Project Layout
+
+```
+expense-tracker/
+├── backend/            # FastAPI API server, SQLAlchemy models, migration scripts
+├── frontend/           # Vite + React source code and styling assets
+├── android-app/        # Native Kotlin app with Jetpack Compose
+└── admin/              # Basic Streamlit admin client for debugging database tables
+```
+
+---
+
+## Testing
+
+To run tests across any of the platforms:
+
 ```bash
-# Backend
+# Backend unit tests
 cd backend && pytest
 
-# Frontend
+# Frontend tests
 cd frontend && npm run test
 
-# Android
+# Android tests
 ./gradlew test
 ```
 
-### Database Migrations
-```bash
-cd backend
-alembic revision --autogenerate -m "description"
-alembic upgrade head
-```
-
-## Deployment
-
-### Docker Compose (Production)
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### Kubernetes
-Helm charts available in `deploy/kubernetes/`
+---
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+1. Fork the project.
+2. Create your feature branch (`git checkout -b feature/cool-idea`).
+3. Make changes and verify by running tests.
+4. Commit your changes and open a Pull Request.
+
+---
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License.
